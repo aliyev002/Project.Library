@@ -1,0 +1,56 @@
+.admin-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  color: var(--text-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-action-btn:hover {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.admin-action-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  z-index: 50;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.admin-action-dropdown-item {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-body);
+}
+
+.admin-action-dropdown-item:hover {
+  background-color: #F8FAFC;
+  color: var(--primary);
+}
+
+.admin-action-dropdown-item.delete {
+  color: #DC2626;
+}
+
+.admin-action-dropdown-item.delete:hover {
+  background-color: #FEF2F2;
+}
