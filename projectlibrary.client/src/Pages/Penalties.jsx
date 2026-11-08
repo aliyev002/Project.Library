@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaMoneyBillWave, FaCheckCircle, FaCalculator } from "react-icons/fa";
 import { getMyPenalties, getAllPenalties, payPenalty, calculateOverdue } from "../Api/featuresApi";
 import { useAuth } from "../Context/AuthContext";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const Penalties = () => {
   const { role } = useAuth();
@@ -56,7 +56,6 @@ const Penalties = () => {
 
   return (
     <div style={{ maxWidth: "1100px", margin: "30px auto", padding: "0 20px" }}>
-      <ToastContainer position="bottom-right" />
       <div
         style={{
           display: "flex",

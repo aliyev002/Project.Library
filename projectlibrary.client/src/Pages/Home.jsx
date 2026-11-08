@@ -551,7 +551,7 @@ const Home = () => {
                                 fontWeight: 700,
                                 textTransform: 'uppercase'
                             }}>
-                                ★ Həftənin Seçilmiş Əsəri
+                                <FaStar size={11} style={{ marginRight: 4 }} /> Həftənin Seçilmiş Əsəri
                             </span>
                             <span style={{ fontSize: '0.85rem', color: '#F59E0B', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <FaStar size={13} /> {spotlightBook.ratingAverage || 5.0} / 5.0

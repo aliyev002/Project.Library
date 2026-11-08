@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaUser, FaPhone, FaLock, FaCamera, FaSave } from "react-icons/fa";
 import { getMyProfile, updateMyProfile, uploadImageFile } from "../Api/featuresApi";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);
@@ -111,7 +111,6 @@ const Profile = () => {
 
   return (
     <div style={{ maxWidth: "700px", margin: "30px auto", padding: "0 20px" }}>
-      <ToastContainer position="bottom-right" />
       <div
         style={{
           background: "var(--bg-card)",

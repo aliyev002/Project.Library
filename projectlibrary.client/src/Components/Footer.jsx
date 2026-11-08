@@ -10,7 +10,9 @@ import {
   FaMapMarkerAlt, 
   FaClock, 
   FaChair,
-  FaHeart
+  FaHeart,
+  FaBookmark,
+  FaLightbulb
 } from 'react-icons/fa';
 
 const Footer = () => {
@@ -97,20 +99,20 @@ const Footer = () => {
             Sürətli Keçidlər
           </h5>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.88rem' }}>
-            <Link to="/home" style={{ color: 'var(--text-body)', transition: 'all 0.2s' }}>
-              📚 Kitab Kataloqu
+            <Link to="/home" style={{ color: 'var(--text-body)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FaBookOpen size={13} color="var(--primary)" /> Kitab Kataloqu
             </Link>
-            <Link to="/room-booking" style={{ color: 'var(--text-body)', transition: 'all 0.2s' }}>
-              🪑 3D Masa və Kabinə Bronu
+            <Link to="/room-booking" style={{ color: 'var(--text-body)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FaChair size={13} color="#E69A38" /> 3D Masa və Kabinə Bronu
             </Link>
-            <Link to="/dashboard" style={{ color: 'var(--text-body)', transition: 'all 0.2s' }}>
-              🔖 Şəxsi İcarələrim & Hədəflər
+            <Link to="/dashboard" style={{ color: 'var(--text-body)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FaBookmark size={13} color="#10B981" /> Şəxsi İcarələrim & Hədəflər
             </Link>
-            <Link to="/wishlist" style={{ color: 'var(--text-body)', transition: 'all 0.2s' }}>
-              ❤️ Sevimli Əsərlər Siyahısı
+            <Link to="/wishlist" style={{ color: 'var(--text-body)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FaHeart size={13} color="#EC4899" /> Sevimli Əsərlər Siyahısı
             </Link>
-            <Link to="/suggestions" style={{ color: 'var(--text-body)', transition: 'all 0.2s' }}>
-              💡 Yeni Kitab Təklifi və İanə
+            <Link to="/suggestions" style={{ color: 'var(--text-body)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FaLightbulb size={13} color="#F59E0B" /> Yeni Kitab Təklifi və İanə
             </Link>
           </div>
         </div>

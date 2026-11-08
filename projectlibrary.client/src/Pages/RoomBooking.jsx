@@ -3,6 +3,7 @@ import {
   FaChair, 
   FaCalendarCheck, 
   FaClock, 
+  FaCalendarAlt,
   FaCheck, 
   FaBolt, 
   FaWifi, 
@@ -13,7 +14,11 @@ import {
   FaQrcode,
   FaShieldAlt,
   FaInfoCircle,
-  FaBookOpen
+  FaBookOpen,
+  FaMousePointer,
+  FaSearchPlus,
+  FaCube,
+  FaLightbulb
 } from "react-icons/fa";
 import { 
   getMyRoomBookings, 
@@ -37,7 +42,12 @@ const DEFAULT_SEAT = {
   id: "B-01",
   name: "Mərkəzi Zalı • Masa B-01",
   zone: "Mərkəzi Səssiz Oxu Zalı",
-  amenities: ["🔕 100% Mütləq Səssizlik", "💡 Qədimi Banker Masa Lampası", "⚡ Fərdi Rozetka", "📚 Kitab Altlığı"],
+  amenities: [
+    "Mütləq Səssizlik Rejimi", 
+    "Klassik Banker Masa Lampası", 
+    "Fərdi Elektrik Rozetkası", 
+    "Taxta Kitab Altlığı"
+  ],
   image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80"
 };
 
@@ -150,13 +160,13 @@ const RoomBooking = () => {
               color: "#F6C177",
               marginBottom: "12px"
             }}>
-              <FaBookOpen /> 3D Virtual Kitabxana Oxu Zalı • iTicket İdarəetməsi
+              <FaBookOpen /> 3D Virtual Oxu Zalı & Rezervasiya Portalı
             </div>
             <h1 style={{ fontSize: "2.3rem", fontWeight: 800, margin: "0 0 8px 0", letterSpacing: "-0.02em" }}>
               Kitabxana Masalarının 3D Rezervasiyası
             </h1>
             <p style={{ margin: 0, fontSize: "0.96rem", color: "#E2E8F0", maxWidth: "720px", lineHeight: 1.55 }}>
-              Kitab rəfləri, fərdi oxu lampaları, kompüter iş stansiyaları və pəncərə önü masalarla təchiz olunmuş 3D oxu zalından zövqünüzə uyğun iş yerinizi seçin.
+              Klassik kitab rəfləri, fərdi banker oxu lampaları, kompüter iş stansiyaları və pəncərə önü iş masaları ilə təchiz olunmuş 3D oxu zalından yerinizi seçin.
             </p>
           </div>
 
@@ -247,7 +257,7 @@ const RoomBooking = () => {
           </div>
 
           <div style={{ fontSize: "0.82rem", color: "#CBD5E1", display: "flex", alignItems: "center", gap: "6px" }}>
-            <FaInfoCircle color="#F6C177" /> 3D zalı siçanla fırladın və istədiyiniz masanın / kreslonun üstünə klikləyin
+            <FaInfoCircle color="#F6C177" /> 3D zalı siçanla fırladın və istədiyiniz masanın üstünə klikləyin
           </div>
         </div>
       </div>
@@ -284,10 +294,16 @@ const RoomBooking = () => {
             fontSize: "0.84rem",
             color: "var(--text-muted)"
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-              <span>🎮 <strong>İdarəetmə:</strong> Sol düymə ilə 360° fırladın</span>
-              <span>🔍 Təkərciklə masalara yaxınlaşın</span>
-              <span>🔘 Sağdakı <strong>2D</strong> düyməsi ilə yuxarıdan memarlıq sxeminə keçin</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <FaMousePointer color="var(--primary)" /> <strong>İdarəetmə:</strong> Sol düymə ilə 360° fırladın
+              </span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <FaSearchPlus color="var(--primary)" /> Təkərciklə masalara yaxınlaşın
+              </span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <FaCube color="var(--primary)" /> <strong>2D / 3D</strong> düyməsi ilə baxış bucağını dəyişin
+              </span>
             </div>
           </div>
         </div>
@@ -431,9 +447,14 @@ const RoomBooking = () => {
                         <strong style={{ fontSize: "0.9rem", color: "var(--text-title)", display: "block" }}>
                           {b.roomOrSeatNumber}
                         </strong>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                          📅 {new Date(b.bookingDate).toLocaleDateString()} • ⏰ {b.startTime?.slice(0, 5)} - {b.endTime?.slice(0, 5)}
-                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "4px" }}>
+                          <span style={{ fontSize: "0.76rem", color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <FaCalendarAlt size={11} color="var(--primary)" /> {new Date(b.bookingDate).toLocaleDateString("az-AZ")}
+                          </span>
+                          <span style={{ fontSize: "0.76rem", color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <FaClock size={11} color="#E69A38" /> {b.startTime?.slice(0, 5)} - {b.endTime?.slice(0, 5)}
+                          </span>
+                        </div>
                       </div>
 
                       <button

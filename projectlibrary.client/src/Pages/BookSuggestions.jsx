@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaLightbulb, FaGift, FaPlus, FaCheck, FaTimes } from "react-icons/fa";
 import { getMySuggestions, getAllSuggestions, createSuggestion, updateSuggestionStatus } from "../Api/featuresApi";
 import { useAuth } from "../Context/AuthContext";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const BookSuggestions = () => {
   const { role } = useAuth();
@@ -64,7 +64,6 @@ const BookSuggestions = () => {
 
   return (
     <div style={{ maxWidth: "1100px", margin: "30px auto", padding: "0 20px" }}>
-      <ToastContainer position="bottom-right" />
       <div
         style={{
           display: "flex",

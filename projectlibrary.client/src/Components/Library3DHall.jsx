@@ -1,7 +1,17 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { FaCompress, FaExpand } from "react-icons/fa";
+import { 
+  FaCompress, 
+  FaExpand, 
+  FaLandmark, 
+  FaSun, 
+  FaVolumeMute, 
+  FaDesktop, 
+  FaDoorClosed,
+  FaCheck,
+  FaTimes
+} from "react-icons/fa";
 
 // 4 Real Kitabxana Zonası
 export const LIBRARY_ZONES = [
@@ -11,7 +21,7 @@ export const LIBRARY_ZONES = [
     color: 0x10b981, 
     hex: "#10b981", 
     label: "A Sektoru (A-01 - A-04)", 
-    amenities: ["🪟 Panoramik Pəncərə İşığı", "⚡ 220V Rozetka", "💡 Günəş Şüası", "📶 Wi-Fi 6 (1 Gbps)"] 
+    amenities: ["Panoramik Pəncərə İşığı", "220V Rozetka", "Təbii Günəş İşığı", "Wi-Fi 6 (1 Gbps)"] 
   },
   { 
     id: "silent", 
@@ -19,7 +29,7 @@ export const LIBRARY_ZONES = [
     color: 0x8b5cf6, 
     hex: "#8b5cf6", 
     label: "B Sektoru (B-01 - B-12)", 
-    amenities: ["🔕 100% Mütləq Səssizlik", "💡 Qədimi Banker Masa Lampası", "⚡ Fərdi Rozetka", "📚 Kitab Altlığı"] 
+    amenities: ["Mütləq Səssizlik Rejimi", "Klassik Banker Masa Lampası", "Fərdi Elektrik Rozetkası", "Taxta Kitab Altlığı"] 
   },
   { 
     id: "digital", 
@@ -27,7 +37,7 @@ export const LIBRARY_ZONES = [
     color: 0x0284c7, 
     hex: "#0284c7", 
     label: "C Sektoru (C-01 - C-06)", 
-    amenities: ["🖥️ 27\" 4K Monitor", "⚡ Type-C 100W Fast Charge", "🎧 Səs İzolyasiyalı Qulaqlıq", "📶 Fiber Şəbəkə"] 
+    amenities: ["27 düym 4K Monitor", "Type-C 100W Fast Charge", "Səs İzolyasiyalı Qulaqlıq", "Fiber Optik Şəbəkə"] 
   },
   { 
     id: "pod", 
@@ -35,13 +45,13 @@ export const LIBRARY_ZONES = [
     color: 0xf59e0b, 
     hex: "#f59e0b", 
     label: "D Sektoru (D-01 - D-04)", 
-    amenities: ["🚪 Akustik Səs Keçirməyən Arakəsmə", "🛋️ Erqonomik Kreslo", "🌡️ Fərdi İşıq & Havalandırma", "⚡ 220V Rozetka"] 
+    amenities: ["Akustik Səs Keçirməyən Arakəsmə", "Erqonomik Dəri Kreslo", "Fərdi İşıq və Havalandırma", "220V Rozetka"] 
   }
 ];
 
-const OCCUPIED_COLOR = 0x94a3b8; // Soft grey for occupied
-const SELECTED_COLOR = 0xf59e0b; // Amber / Golden for active user selection
-const MINE_COLOR = 0xec4899;     // Pink / Magenta for user's own confirmed reservation
+const OCCUPIED_COLOR = 0x94a3b8;
+const SELECTED_COLOR = 0xf59e0b;
+const MINE_COLOR = 0xec4899;
 
 const Library3DHall = ({ 
   selectedSeat, 
@@ -76,8 +86,8 @@ const Library3DHall = ({
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08); // A5
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
       gain.gain.setValueAtTime(0.12, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
       osc.connect(gain);
@@ -89,7 +99,7 @@ const Library3DHall = ({
     }
   }, []);
 
-  // Update seat colors & markers based on real-time bookings
+  // Update seat colors based on status
   const updateSeatColors = useCallback(() => {
     if (!interactiveObjectsRef.current) return;
 
@@ -141,7 +151,6 @@ const Library3DHall = ({
         }
       }
 
-      // Also update desk marker ring if attached
       if (meta.markerRing && meta.markerRing.material) {
         meta.markerRing.material.color.setHex(color);
         meta.markerRing.visible = isSelected || isMine || !isOccupied;
@@ -153,7 +162,7 @@ const Library3DHall = ({
     updateSeatColors();
   }, [updateSeatColors]);
 
-  // Build the 3D Library Room Scene
+  // Build the 3D Open Academic Library Hall Stage (Diorama)
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
@@ -161,15 +170,15 @@ const Library3DHall = ({
     const width = container.clientWidth || 980;
     const height = container.clientHeight || 580;
 
-    // 1. SCENE
+    // 1. SCENE (Açıq, aydın, duman və tavan məhdudiyyəti olmadan)
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x131720); // Dark elegant collegiate atmosphere
-    scene.fog = new THREE.FogExp2(0x131720, 0.015);
+    scene.background = new THREE.Color(0x161d2b); // Dərin akademik tünd fon (bozarmır)
+    scene.fog = null; // DUMAN SİLİNDİ - fırladanda qətiyyən bozarmaz!
     sceneRef.current = scene;
 
     // 2. CAMERA
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 8.5, 15);
+    camera.position.set(0, 8.8, 15.0);
     cameraRef.current = camera;
 
     // 3. RENDERER
@@ -183,170 +192,265 @@ const Library3DHall = ({
     container.replaceChildren(renderer.domElement);
     rendererRef.current = renderer;
 
-    // 4. ORBIT CONTROLS
+    // 4. ORBIT CONTROLS (Fırladanda divara və ya tavana dəymir, həmişə açıqdır)
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.target.set(0, 1.2, 0);
-    controls.maxPolarAngle = Math.PI / 2.1;
-    controls.minPolarAngle = Math.PI / 8;
-    controls.minDistance = 6;
-    controls.maxDistance = 22;
+    controls.target.set(0, 0.8, 0);
+    controls.maxPolarAngle = Math.PI / 2.05; // Döşəmənin altına keçməyə imkan vermir
+    controls.minPolarAngle = Math.PI / 24;  // Yuxarıdan tam baxışa imkan verir
+    controls.minDistance = 5;
+    controls.maxDistance = 26;
     controlsRef.current = controls;
 
-    // 5. LIGHTING (Warm Academic Library Illumination)
-    const ambientLight = new THREE.AmbientLight(0xfff5ea, 1.2);
+    // 5. LIGHTING (İsti, canlı və təbii işıqlandırma)
+    const ambientLight = new THREE.AmbientLight(0xfff8ee, 1.4);
     scene.add(ambientLight);
 
-    // Warm Sun streaming through west arched windows
-    const sunLight = new THREE.DirectionalLight(0xfffaed, 1.8);
-    sunLight.position.set(-14, 12, 4);
+    // Əsas Günəş İşığı (Pəncərə tərəfdən gəlir)
+    const sunLight = new THREE.DirectionalLight(0xfff5df, 2.0);
+    sunLight.position.set(-14, 14, 6);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 1024;
     sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.bias = -0.0005;
     scene.add(sunLight);
 
-    // Soft overhead room downlight
-    const roomDownLight = new THREE.PointLight(0xffecd2, 1.5, 25);
-    roomDownLight.position.set(0, 7, 0);
+    // Qarşı tərəfdən yumşaq doldurucu işıq (kölgələrin qapqara olmaması üçün)
+    const fillLight = new THREE.DirectionalLight(0xdbeafe, 0.8);
+    fillLight.position.set(12, 10, -6);
+    scene.add(fillLight);
+
+    // Mərkəzi zal işığı
+    const roomDownLight = new THREE.PointLight(0xffecc2, 1.3, 20);
+    roomDownLight.position.set(0, 5.5, 0);
     scene.add(roomDownLight);
 
-    // 6. ROOM ARCHITECTURE (Floor, Walls, Ceiling)
-    // Floor: Warm Herringbone Hardwood Parquet
-    const floorGeo = new THREE.PlaneGeometry(24, 20);
+    // 6. ROOM ARCHITECTURE (AÇIQ MEMARLIQ: Ön və Tavan tam açıqdır, mane olmur)
+    const roomW = 25;
+    const roomL = 19;
+    const wallH = 5.2;
+
+    // Parket döşəmə - İsti təbii palıd
+    const floorGeo = new THREE.PlaneGeometry(roomW, roomL);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x8b5a36,
+      color: 0x936037,
       roughness: 0.35,
-      metalness: 0.08
+      metalness: 0.05
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Baseboards / Trims
-    const trimMat = new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.6 });
-    const trimBack = new THREE.Mesh(new THREE.BoxGeometry(24, 0.4, 0.1), trimMat);
-    trimBack.position.set(0, 0.2, -10);
-    scene.add(trimBack);
+    // Mərkəzi Qırmızı-Qızılı Lüks Kitabxana Xalçası
+    const carpetGeo = new THREE.PlaneGeometry(3.6, roomL - 0.5);
+    const carpetMat = new THREE.MeshStandardMaterial({
+      color: 0x7b1828,
+      roughness: 0.85,
+      metalness: 0.0
+    });
+    const carpet = new THREE.Mesh(carpetGeo, carpetMat);
+    carpet.rotation.x = -Math.PI / 2;
+    carpet.position.set(-0.8, 0.015, 0);
+    carpet.receiveShadow = true;
+    scene.add(carpet);
 
-    // Walls
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x222a38, roughness: 0.85 });
-    
-    // North Back Wall
-    const backWall = new THREE.Mesh(new THREE.BoxGeometry(24, 6.5, 0.4), wallMat);
-    backWall.position.set(0, 3.25, -10.2);
+    // Xalçanın qızılı haşiyələri
+    const borderMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.4, metalness: 0.6 });
+    [-2.6, 1.0].forEach((bx) => {
+      const border = new THREE.Mesh(new THREE.PlaneGeometry(0.08, roomL - 0.5), borderMat);
+      border.rotation.x = -Math.PI / 2;
+      border.position.set(bx, 0.018, 0);
+      scene.add(border);
+    });
+
+    // Divar Materialları (İsti krem daş divar + qoz ağacı panellər)
+    const wallPlasterMat = new THREE.MeshStandardMaterial({ color: 0xede4d5, roughness: 0.75 });
+    const woodPanelMat = new THREE.MeshStandardMaterial({ color: 0x3d2012, roughness: 0.55 });
+    const woodCrownMat = new THREE.MeshStandardMaterial({ color: 0x2b160b, roughness: 0.5 });
+
+    // 1. ŞİMAL DİVARI (Arxa Divar - Kitab Rəfləri ilə Zənginləşdirilib)
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(roomW, wallH, 0.5), wallPlasterMat);
+    backWall.position.set(0, wallH / 2, -roomL / 2);
     scene.add(backWall);
 
-    // East Wall (Right)
-    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.4, 6.5, 20), wallMat);
-    rightWall.position.set(12.2, 3.25, 0);
-    scene.add(rightWall);
+    const backWainscot = new THREE.Mesh(new THREE.BoxGeometry(roomW, 1.2, 0.6), woodPanelMat);
+    backWainscot.position.set(0, 0.6, -roomL / 2);
+    scene.add(backWainscot);
 
-    // West Wall with Large Arched Library Windows (Left)
-    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.4, 6.5, 20), wallMat);
-    leftWall.position.set(-12.2, 3.25, 0);
+    // 2. QƏRB DİVARI (Sol Divar - Pəncərələr ilə Zənginləşdirilib)
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, wallH, roomL), wallPlasterMat);
+    leftWall.position.set(-roomW / 2, wallH / 2, 0);
     scene.add(leftWall);
 
-    // 3 Large Luminous Panoramic Windows along the West Wall
-    const windowGlassMat = new THREE.MeshBasicMaterial({ color: 0xdbeafe });
-    const windowFrameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+    const leftWainscot = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, roomL), woodPanelMat);
+    leftWainscot.position.set(-roomW / 2, 0.6, 0);
+    scene.add(leftWainscot);
 
-    for (let z = -6; z <= 6; z += 6) {
-      // Window glass
-      const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 4.2), windowGlassMat);
-      glass.position.set(-12.0, 3.4, z);
+    // 3. ŞƏRQ DİVARI (Sağ Divar - Rəflər və Saat ilə Zənginləşdirilib)
+    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, wallH, roomL), wallPlasterMat);
+    rightWall.position.set(roomW / 2, wallH / 2, 0);
+    scene.add(rightWall);
+
+    const rightWainscot = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, roomL), woodPanelMat);
+    rightWainscot.position.set(roomW / 2, 0.6, 0);
+    scene.add(rightWainscot);
+
+    // QEYD: Ön tərəf (Cənub) və Tavan tamamilə açıqdır! Kamera fırlananda heç vaxt örtülmür və bozarmaz.
+
+    // 7. QƏRB DİVARINDA PƏNCƏRƏLƏR VƏ TƏBİİ İŞIQ
+    const windowFrameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+    const windowGlassMat = new THREE.MeshStandardMaterial({ color: 0x93c5fd, roughness: 0.2, metalness: 0.3 });
+
+    for (let wz = -6.0; wz <= 6.0; wz += 4.0) {
+      // Pəncərə Şüşəsi
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 3.2), windowGlassMat);
+      glass.position.set(-roomW / 2 + 0.28, 3.0, wz);
       glass.rotation.y = Math.PI / 2;
       scene.add(glass);
 
-      // Window Frame Arch
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4.4, 3.2), windowFrameMat);
-      frame.position.set(-12.0, 3.4, z);
+      // Pəncərə Çərçivəsi
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.4, 2.4), windowFrameMat);
+      frame.position.set(-roomW / 2 + 0.26, 3.0, wz);
       scene.add(frame);
 
-      // Soft sun glow from window
-      const winLight = new THREE.PointLight(0xfff7ed, 0.9, 12);
-      winLight.position.set(-11.5, 3.8, z);
-      scene.add(winLight);
+      // Pəncərə Arakəsmələri
+      const vMuntin = new THREE.Mesh(new THREE.BoxGeometry(0.22, 3.2, 0.06), windowFrameMat);
+      vMuntin.position.set(-roomW / 2 + 0.27, 3.0, wz);
+      scene.add(vMuntin);
+
+      const hMuntin = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 2.2), windowFrameMat);
+      hMuntin.position.set(-roomW / 2 + 0.27, 3.0, wz);
+      scene.add(hMuntin);
+
+      // Pəncərə qarşısında isti günəş işığı
+      const pLight = new THREE.PointLight(0xfff7e6, 0.7, 7);
+      pLight.position.set(-roomW / 2 + 1.0, 3.0, wz);
+      scene.add(pLight);
     }
 
-    // 7. BOOKSHELVES (Tall Wooden Bookshelves filled with rows of books)
-    const shelfWoodMat = new THREE.MeshStandardMaterial({ color: 0x4a2e1b, roughness: 0.65 });
-    const bookColors = [0x7b2d4a, 0x1e3a5f, 0x1b4332, 0x854d0e, 0x3f3f46, 0xb91c1c, 0x1e293b, 0xca8a04];
+    // 8. DİVARLAR BOYUNCA KİTAB RƏFLƏRİ
+    const shelfWoodMat = new THREE.MeshStandardMaterial({ color: 0x422214, roughness: 0.55 });
+    const bookColors = [
+      0x881337, 0x1e3a8a, 0x14532d, 0x78350f, 0x312e81, 
+      0x9a3412, 0x164e63, 0x701a75, 0xb45309, 0x1e293b
+    ];
 
-    const createBookshelf = (posX, posY, posZ, rotY = 0) => {
+    const createBookcase = (posX, posY, posZ, width, height, rotY = 0) => {
       const shelfGroup = new THREE.Group();
       shelfGroup.position.set(posX, posY, posZ);
       shelfGroup.rotation.y = rotY;
 
-      // Outer frame
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(4.2, 5.0, 0.6), shelfWoodMat);
-      frame.position.y = 2.5;
+      // Korpus
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.6), shelfWoodMat);
+      frame.position.y = height / 2;
       frame.castShadow = true;
       shelfGroup.add(frame);
 
-      // 4 Shelf levels with multi-colored books
-      for (let s = 1; s <= 4; s++) {
-        const shelfY = s * 1.1;
-        // Shelf plank
-        const plank = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.08, 0.55), shelfWoodMat);
-        plank.position.set(0, shelfY, 0.05);
+      // Tac hissəsi
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(width + 0.15, 0.2, 0.68), woodCrownMat);
+      crown.position.y = height + 0.1;
+      shelfGroup.add(crown);
+
+      // 4 səviyyə rəf
+      const numShelves = 4;
+      const step = height / (numShelves + 1);
+      for (let s = 1; s <= numShelves; s++) {
+        const sY = s * step;
+        const plank = new THREE.Mesh(new THREE.BoxGeometry(width - 0.2, 0.07, 0.54), shelfWoodMat);
+        plank.position.set(0, sY, 0.04);
         shelfGroup.add(plank);
 
-        // Books on shelf
-        for (let b = -1.8; b <= 1.8; b += 0.16) {
-          const bookHeight = 0.55 + Math.sin(b * 5) * 0.12;
-          const bookColor = bookColors[Math.floor(Math.abs(Math.sin(b * 12)) * bookColors.length)];
-          const bookMat = new THREE.MeshStandardMaterial({ color: bookColor, roughness: 0.5 });
-          const bookMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, bookHeight, 0.42), bookMat);
-          bookMesh.position.set(b, shelfY + bookHeight / 2 + 0.04, 0.06);
+        // Kitablar
+        const halfW = (width - 0.4) / 2;
+        for (let b = -halfW; b <= halfW; b += 0.14) {
+          const bH = step * 0.75 + (Math.sin(b * 8) * 0.06);
+          const bColor = bookColors[Math.floor(Math.abs(Math.sin(b * 13)) * bookColors.length)];
+          const bMat = new THREE.MeshStandardMaterial({ color: bColor, roughness: 0.45 });
+          const bookMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, bH, 0.44), bMat);
+          bookMesh.position.set(b, sY + bH / 2 + 0.035, 0.05);
           shelfGroup.add(bookMesh);
         }
       }
+
       scene.add(shelfGroup);
     };
 
-    // Place bookshelves along North Wall and East Wall
-    createBookshelf(-7.5, 0, -9.8, 0);
-    createBookshelf(-2.5, 0, -9.8, 0);
-    createBookshelf(2.5, 0, -9.8, 0);
-    createBookshelf(7.5, 0, -9.8, 0);
-    createBookshelf(11.8, 0, -5.0, -Math.PI / 2);
-    createBookshelf(11.8, 0, 5.0, -Math.PI / 2);
+    // Şimal Divarı boyu Kitab Rəfləri (Arxa divar)
+    createBookcase(-8.5, 0, -roomL / 2 + 0.35, 5.0, 4.4, 0);
+    createBookcase(-3.0, 0, -roomL / 2 + 0.35, 5.0, 4.4, 0);
+    createBookcase(3.0, 0, -roomL / 2 + 0.35, 5.0, 4.4, 0);
+    createBookcase(8.5, 0, -roomL / 2 + 0.35, 5.0, 4.4, 0);
 
-    // 8. LIBRARY STUDY DESKS & STATIONS (4 ZONES)
+    // Şərq Divarı boyu Kitab Rəfləri (Sağ divar)
+    createBookcase(roomW / 2 - 0.35, 0, -4.5, 4.6, 4.4, -Math.PI / 2);
+    createBookcase(roomW / 2 - 0.35, 0, 4.5, 4.6, 4.4, -Math.PI / 2);
+
+    // Şərq Divarının mərkəzində klassik qızılı kitabxana saatı
+    const clockGroup = new THREE.Group();
+    clockGroup.position.set(roomW / 2 - 0.5, 3.6, 0);
+    clockGroup.rotation.y = -Math.PI / 2;
+    const clockDial = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.08, 32), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    clockDial.rotation.x = Math.PI / 2;
+    clockGroup.add(clockDial);
+    const clockRing = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.06, 12, 32), borderMat);
+    clockGroup.add(clockRing);
+    scene.add(clockGroup);
+
+    // Klassik Divar Çıraqları (Wall Sconces)
+    const createWallSconce = (wx, wy, wz, rotY = 0) => {
+      const sconce = new THREE.Group();
+      sconce.position.set(wx, wy, wz);
+      sconce.rotation.y = rotY;
+
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 12), borderMat);
+      base.rotation.x = Math.PI / 2;
+      sconce.add(base);
+
+      const shade = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.2, 16), new THREE.MeshStandardMaterial({ color: 0xfffae0, roughness: 0.3 }));
+      shade.position.set(0, 0.08, 0.18);
+      sconce.add(shade);
+
+      const light = new THREE.PointLight(0xffe8b0, 0.45, 4);
+      light.position.set(0, 0.04, 0.18);
+      sconce.add(light);
+
+      scene.add(sconce);
+    };
+
+    createWallSconce(roomW / 2 - 0.45, 2.8, -1.8, -Math.PI / 2);
+    createWallSconce(roomW / 2 - 0.45, 2.8, 1.8, -Math.PI / 2);
+
+    // 9. MASA VƏ KRESLO KOMPONENTLƏRİ (4 ZONA)
     const interactiveObjects = [];
 
-    // Reusable Materials
-    const tableWoodMat = new THREE.MeshStandardMaterial({ color: 0x9c6644, roughness: 0.35, metalness: 0.05 });
-    const legMetalMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.4 });
-    const lampGreenMat = new THREE.MeshStandardMaterial({ color: 0x1e3a2b, roughness: 0.3 });
-    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.25, metalness: 0.7 });
+    const tableWoodMat = new THREE.MeshStandardMaterial({ color: 0x61341c, roughness: 0.28, metalness: 0.05 });
+    const legMetalMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.3 });
+    const lampGreenMat = new THREE.MeshStandardMaterial({ color: 0x134e4a, roughness: 0.2 });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.2, metalness: 0.75 });
 
-    // Helper: Create an interactive library study seat
+    // İnteraktiv Kreslo
     const createLibrarySeat = (seatId, seatName, zoneObj, posX, posY, posZ, facingAngle) => {
       const seatGroup = new THREE.Group();
       seatGroup.position.set(posX, posY, posZ);
       seatGroup.rotation.y = facingAngle;
 
-      // Chair cushion (interactive target)
       const cushionMat = new THREE.MeshStandardMaterial({
         color: zoneObj.color,
         roughness: 0.5,
-        metalness: 0.1
+        metalness: 0.08
       });
       const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.1, 0.52), cushionMat);
       cushion.position.set(0, 0.48, 0);
       cushion.castShadow = true;
       seatGroup.add(cushion);
 
-      // Chair Backrest with wooden slats
       const backrest = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.48, 0.08), cushionMat);
       backrest.position.set(0, 0.76, -0.22);
       backrest.castShadow = true;
       seatGroup.add(backrest);
 
-      // Chair Legs
       const chairLegGeo = new THREE.CylinderGeometry(0.025, 0.02, 0.45, 8);
       for (const lx of [-0.22, 0.22]) {
         for (const lz of [-0.2, 0.2]) {
@@ -356,7 +460,6 @@ const Library3DHall = ({
         }
       }
 
-      // Glowing selection marker ring on the floor
       const ringGeo = new THREE.RingGeometry(0.35, 0.42, 24);
       const ringMat = new THREE.MeshBasicMaterial({ color: zoneObj.color, side: THREE.DoubleSide });
       const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -364,7 +467,6 @@ const Library3DHall = ({
       ring.position.set(0, 0.02, 0);
       seatGroup.add(ring);
 
-      // Metadata for raycasting
       cushion.userData = {
         id: seatId,
         name: seatName,
@@ -380,12 +482,11 @@ const Library3DHall = ({
       interactiveObjects.push(cushion);
     };
 
-    // Helper: Classic Green Banker's Desk Lamp with glowing bulb
+    // Klassik Yaşıl Banker Masa Lampası
     const createDeskLamp = (x, y, z) => {
       const lampGroup = new THREE.Group();
       lampGroup.position.set(x, y, z);
 
-      // Brass base & stem
       const base = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.03, 16), brassMat);
       lampGroup.add(base);
 
@@ -393,34 +494,30 @@ const Library3DHall = ({
       stem.position.y = 0.18;
       lampGroup.add(stem);
 
-      // Curved Emerald Glass Shade
       const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.12, 16, 1, false, 0, Math.PI), lampGreenMat);
       shade.rotation.x = Math.PI / 2;
       shade.position.set(0, 0.35, 0);
       lampGroup.add(shade);
 
-      // Subtle warm reading light glow
-      const lampLight = new THREE.PointLight(0xffecc4, 0.45, 2.5);
+      const lampLight = new THREE.PointLight(0xffecc4, 0.5, 2.8);
       lampLight.position.set(0, 0.28, 0);
       lampGroup.add(lampLight);
 
       scene.add(lampGroup);
     };
 
-    // --- ZONE A: Pəncərə Önü Tədqiqat Masaları (Along West Window Wall) ---
+    // --- ZONE A: Pəncərə Önü Tədqiqat Masaları (Qərb Divarı boyu) ---
     const zoneA = LIBRARY_ZONES[0];
     for (let i = 0; i < 4; i++) {
       const deskZ = -4.5 + i * 3.0;
-      const deskX = -9.2;
+      const deskX = -9.4;
       const deskId = `A-0${i + 1}`;
 
-      // Wooden study table
       const table = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 1.0), tableWoodMat);
       table.position.set(deskX, 0.74, deskZ);
       table.castShadow = true;
       scene.add(table);
 
-      // Table legs
       for (const tx of [-0.7, 0.7]) {
         for (const tz of [-0.4, 0.4]) {
           const tLeg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.72, 0.06), legMetalMat);
@@ -429,27 +526,23 @@ const Library3DHall = ({
         }
       }
 
-      // Lamp & open book on desk
       createDeskLamp(deskX - 0.45, 0.78, deskZ);
       const book = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.03, 0.25), new THREE.MeshStandardMaterial({ color: 0xffffff }));
       book.position.set(deskX, 0.8, deskZ);
       scene.add(book);
 
-      // Interactive Chair facing the window
       createLibrarySeat(deskId, `Masa ${deskId} • Pəncərə Önü`, zoneA, deskX + 0.85, 0, deskZ, -Math.PI / 2);
     }
 
-    // --- ZONE B: Mərkəzi Səssiz Oxu Zalı (2 Large Shared Mahogany Library Tables) ---
+    // --- ZONE B: Mərkəzi Səssiz Oxu Zalı (2 Böyük Klassik Qoz Masası) ---
     const zoneB = LIBRARY_ZONES[1];
 
     const createSharedTable = (centerX, centerZ, startSeatIndex) => {
-      // Large Table Top (seats 6 people, 3 on each side)
       const table = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.1, 2.2), tableWoodMat);
       table.position.set(centerX, 0.75, centerZ);
       table.castShadow = true;
       scene.add(table);
 
-      // Table Legs
       for (const tx of [-2.4, 0, 2.4]) {
         for (const tz of [-0.95, 0.95]) {
           const tLeg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.72, 0.08), legMetalMat);
@@ -458,16 +551,13 @@ const Library3DHall = ({
         }
       }
 
-      // Center Divider Partition
       const divider = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.28, 0.04), new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.5 }));
       divider.position.set(centerX, 0.92, centerZ);
       scene.add(divider);
 
-      // 3 seats on North side, 3 seats on South side
       const offsets = [-1.7, 0, 1.7];
       let sIdx = startSeatIndex;
 
-      // North side (facing South)
       offsets.forEach((offX) => {
         const sNum = sIdx < 10 ? `0${sIdx}` : `${sIdx}`;
         const seatId = `B-${sNum}`;
@@ -476,7 +566,6 @@ const Library3DHall = ({
         sIdx++;
       });
 
-      // South side (facing North)
       offsets.forEach((offX) => {
         const sNum = sIdx < 10 ? `0${sIdx}` : `${sIdx}`;
         const seatId = `B-${sNum}`;
@@ -486,32 +575,28 @@ const Library3DHall = ({
       });
     };
 
-    createSharedTable(-1.0, -3.5, 1);  // Desks B-01 to B-06
-    createSharedTable(-1.0, 3.5, 7);   // Desks B-07 to B-12
+    createSharedTable(-1.0, -3.5, 1);
+    createSharedTable(-1.0, 3.5, 7);
 
-    // --- ZONE C: Rəqəmsal Kompüter Laboratoriyası (Northeast Workstations) ---
+    // --- ZONE C: Rəqəmsal Kompüter Laboratoriyası (Şərq Stansiyaları) ---
     const zoneC = LIBRARY_ZONES[2];
     const compTable = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.08, 1.1), tableWoodMat);
     compTable.position.set(7.5, 0.74, -4.5);
     scene.add(compTable);
 
-    // 3 iMac Workstations facing North
     for (let c = 0; c < 3; c++) {
       const cx = 5.8 + c * 1.7;
       const seatId = `C-0${c + 1}`;
 
-      // iMac Monitor
       const screenMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2 });
       const screen = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.03), screenMat);
       screen.position.set(cx, 1.05, -4.8);
       scene.add(screen);
 
-      // Monitor Stand
       const stand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.12), legMetalMat);
       stand.position.set(cx, 0.85, -4.8);
       scene.add(stand);
 
-      // Screen glow
       const glow = new THREE.PointLight(0x38bdf8, 0.4, 1.5);
       glow.position.set(cx, 1.05, -4.6);
       scene.add(glow);
@@ -519,7 +604,6 @@ const Library3DHall = ({
       createLibrarySeat(seatId, `Kompüter Workstation • ${seatId}`, zoneC, cx, 0, -3.6, Math.PI);
     }
 
-    // 3 iMac Workstations facing South
     const compTable2 = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.08, 1.1), tableWoodMat);
     compTable2.position.set(7.5, 0.74, -1.8);
     scene.add(compTable2);
@@ -540,16 +624,15 @@ const Library3DHall = ({
       createLibrarySeat(seatId, `Kompüter Workstation • ${seatId}`, zoneC, cx, 0, -2.7, 0);
     }
 
-    // --- ZONE D: Fərdi Akustik Kabinələr (Southeast Private Study Pods) ---
+    // --- ZONE D: Fərdi Akustik Kabinələr (Cənub-Şərq Kabinələri) ---
     const zoneD = LIBRARY_ZONES[3];
-    const podWallMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+    const podWallMat = new THREE.MeshStandardMaterial({ color: 0x2e384d, roughness: 0.65 });
 
     for (let p = 0; p < 4; p++) {
       const px = 5.8 + (p % 2) * 2.8;
       const pz = 3.2 + Math.floor(p / 2) * 2.8;
       const seatId = `D-0${p + 1}`;
 
-      // Acoustic booth surround (3 walls)
       const bBack = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.8, 0.08), podWallMat);
       bBack.position.set(px, 0.9, pz - 0.9);
       scene.add(bBack);
@@ -562,12 +645,10 @@ const Library3DHall = ({
       bRight.position.set(px + 0.9, 0.9, pz);
       scene.add(bRight);
 
-      // Desk inside pod
       const pDesk = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.8), tableWoodMat);
       pDesk.position.set(px, 0.74, pz - 0.4);
       scene.add(pDesk);
 
-      // LED reading strip light inside pod
       const podLight = new THREE.PointLight(0xfff5ea, 0.55, 2.5);
       podLight.position.set(px, 1.6, pz - 0.4);
       scene.add(podLight);
@@ -578,7 +659,7 @@ const Library3DHall = ({
     interactiveObjectsRef.current = interactiveObjects;
     updateSeatColors();
 
-    // 9. ANIMATION LOOP
+    // 10. ANIMATION LOOP
     const animate = () => {
       animFrameIdRef.current = requestAnimationFrame(animate);
       if (controlsRef.current) {
@@ -590,7 +671,7 @@ const Library3DHall = ({
     };
     animate();
 
-    // 10. RESIZE
+    // 11. RESIZE HANDLER
     const handleResize = () => {
       if (!mountRef.current || !rendererRef.current || !cameraRef.current) return;
       const w = mountRef.current.clientWidth || 980;
@@ -610,7 +691,7 @@ const Library3DHall = ({
     };
   }, []);
 
-  // Raycasting for Mouse Hover & Click
+  // Raycasting
   const handlePointerMove = (e) => {
     if (!mountRef.current || !cameraRef.current || !sceneRef.current) return;
     const rect = mountRef.current.getBoundingClientRect();
@@ -669,25 +750,22 @@ const Library3DHall = ({
     }
   };
 
-  // 2D Floorplan / 3D Perspective Toggle
   const toggle2D = () => {
     if (!cameraRef.current || !controlsRef.current) return;
     const camera = cameraRef.current;
     const controls = controlsRef.current;
 
     if (!is2D) {
-      // 2D Architectural Floorplan from above
-      camera.position.set(0, 18.5, 0.1);
+      camera.position.set(0, 18, 0.1);
       controls.target.set(0, 0, 0);
       controls.maxPolarAngle = 0.05;
       controls.minPolarAngle = 0;
       setIs2D(true);
     } else {
-      // 3D Perspective inside the library hall
-      camera.position.set(0, 8.5, 15);
-      controls.target.set(0, 1.2, 0);
-      controls.maxPolarAngle = Math.PI / 2.1;
-      controls.minPolarAngle = Math.PI / 8;
+      camera.position.set(0, 8.8, 15.0);
+      controls.target.set(0, 0.8, 0);
+      controls.maxPolarAngle = Math.PI / 2.05;
+      controls.minPolarAngle = Math.PI / 24;
       setIs2D(false);
     }
     controls.update();
@@ -704,17 +782,27 @@ const Library3DHall = ({
     }
   };
 
+  const getZoneIcon = (id) => {
+    switch (id) {
+      case "window": return <FaSun size={12} color="#10b981" />;
+      case "silent": return <FaVolumeMute size={12} color="#8b5cf6" />;
+      case "digital": return <FaDesktop size={12} color="#0284c7" />;
+      case "pod": return <FaDoorClosed size={12} color="#f59e0b" />;
+      default: return null;
+    }
+  };
+
   return (
     <div
       ref={containerRef}
       style={{
         position: "relative",
         width: "100%",
-        height: isFullscreen ? "100vh" : "580px",
+        height: isFullscreen ? "100vh" : "590px",
         borderRadius: isFullscreen ? "0" : "24px",
         overflow: "hidden",
-        backgroundColor: "#131720",
-        boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)"
+        backgroundColor: "#161d2b",
+        boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1)"
       }}
     >
       {/* 3D WebGL Canvas */}
@@ -725,22 +813,22 @@ const Library3DHall = ({
         style={{ width: "100%", height: "100%" }}
       />
 
-      {/* TOP FLOATING LEGEND PILL (Exact match to iTicket style adapted for Library) */}
+      {/* TOP FLOATING LEGEND PILL */}
       <div
         style={{
           position: "absolute",
           top: "16px",
           left: "50%",
           transform: "translateX(-50%)",
-          background: "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
+          background: "rgba(255, 255, 255, 0.96)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
           borderRadius: "30px",
-          padding: "5px 12px",
+          padding: "6px 14px",
           display: "flex",
           alignItems: "center",
           gap: "8px",
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.3)",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)",
           zIndex: 10,
           maxWidth: "94vw",
           overflowX: "auto"
@@ -753,19 +841,21 @@ const Library3DHall = ({
               display: "inline-flex",
               alignItems: "center",
               gap: "6px",
-              padding: "4px 10px",
+              padding: "5px 12px",
               borderRadius: "20px",
-              background: "#f1f5f9",
-              fontSize: "0.78rem",
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              fontSize: "0.8rem",
               fontWeight: 700,
               color: "#1e293b",
               whiteSpace: "nowrap"
             }}
           >
+            {getZoneIcon(zone.id)}
             <span
               style={{
-                width: "9px",
-                height: "9px",
+                width: "8px",
+                height: "8px",
                 borderRadius: "50%",
                 backgroundColor: zone.hex,
                 display: "inline-block"
@@ -780,10 +870,11 @@ const Library3DHall = ({
             display: "inline-flex",
             alignItems: "center",
             gap: "6px",
-            padding: "4px 10px",
+            padding: "5px 12px",
             borderRadius: "20px",
             background: "#f1f5f9",
-            fontSize: "0.78rem",
+            border: "1px solid #e2e8f0",
+            fontSize: "0.8rem",
             fontWeight: 700,
             color: "#64748b",
             whiteSpace: "nowrap"
@@ -791,14 +882,14 @@ const Library3DHall = ({
         >
           <span
             style={{
-              width: "9px",
-              height: "9px",
+              width: "8px",
+              height: "8px",
               borderRadius: "50%",
               backgroundColor: "#94a3b8",
               display: "inline-block"
             }}
           />
-          Məşğul / Dolu
+          Məşğul
         </div>
       </div>
 
@@ -810,19 +901,19 @@ const Library3DHall = ({
           position: "absolute",
           top: "16px",
           right: "18px",
-          width: "40px",
-          height: "40px",
+          width: "42px",
+          height: "42px",
           borderRadius: "12px",
           background: "rgba(255, 255, 255, 0.95)",
           backdropFilter: "blur(10px)",
-          border: "none",
+          border: "1px solid rgba(0, 0, 0, 0.08)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           color: "#1e293b",
           fontSize: "1rem",
           cursor: "pointer",
-          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.25)",
+          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
           zIndex: 10
         }}
       >
@@ -832,19 +923,19 @@ const Library3DHall = ({
       {/* RIGHT SIDE FLOATING ROUND 2D / 3D TOGGLE BUTTON */}
       <button
         onClick={toggle2D}
-        title={is2D ? "3D Perspektivə keç" : "2D Sxemə keç"}
+        title={is2D ? "3D Perspektivə keç" : "2D Memarlıq sxeminə keç"}
         style={{
           position: "absolute",
           top: "50%",
           right: "22px",
           transform: "translateY(-50%)",
-          width: "48px",
-          height: "48px",
+          width: "50px",
+          height: "50px",
           borderRadius: "50%",
           background: "#FFFFFF",
           color: "#1e293b",
           border: "2px solid #e2e8f0",
-          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.35)",
+          boxShadow: "0 12px 28px rgba(0, 0, 0, 0.25)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -865,21 +956,26 @@ const Library3DHall = ({
           bottom: "16px",
           left: "50%",
           transform: "translateX(-50%)",
-          background: "rgba(0, 0, 0, 0.65)",
-          backdropFilter: "blur(8px)",
-          color: "#f6c177",
-          padding: "6px 18px",
+          background: "rgba(255, 255, 255, 0.92)",
+          backdropFilter: "blur(10px)",
+          color: "#7b2d4a",
+          padding: "7px 20px",
           borderRadius: "20px",
-          fontSize: "0.78rem",
-          fontWeight: 700,
-          letterSpacing: "0.06em",
+          fontSize: "0.82rem",
+          fontWeight: 800,
+          letterSpacing: "0.04em",
           textTransform: "uppercase",
           pointerEvents: "none",
           zIndex: 10,
-          border: "1px solid rgba(246, 193, 119, 0.3)"
+          border: "1px solid rgba(123, 45, 74, 0.2)",
+          boxShadow: "0 8px 20px rgba(0, 0, 0, 0.15)",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px"
         }}
       >
-        📚 AKADEMİK OXU ZALI VƏ RƏQƏMSAL TƏDQİQAT MƏRKƏZİ
+        <FaLandmark color="#d97706" />
+        <span>Akademik Oxu Zalı və Rəqəmsal Tədqiqat Mərkəzi</span>
       </div>
 
       {/* FLOATING 3D HOVER TOOLTIP */}
@@ -890,27 +986,44 @@ const Library3DHall = ({
             left: `${tooltipPos.x}px`,
             top: `${tooltipPos.y}px`,
             transform: "translate(-50%, -100%)",
-            background: "rgba(15, 23, 42, 0.94)",
-            backdropFilter: "blur(10px)",
+            background: "rgba(15, 23, 42, 0.95)",
+            backdropFilter: "blur(12px)",
             color: "#ffffff",
-            padding: "8px 14px",
-            borderRadius: "12px",
-            fontSize: "0.82rem",
+            padding: "10px 16px",
+            borderRadius: "14px",
+            fontSize: "0.84rem",
             pointerEvents: "none",
             zIndex: 20,
-            boxShadow: "0 12px 28px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15)",
+            boxShadow: "0 14px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.12)",
             whiteSpace: "nowrap",
             textAlign: "center"
           }}
         >
-          <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#f6c177", marginBottom: "2px" }}>
+          <div style={{ fontWeight: 800, fontSize: "0.94rem", color: "#f6c177", marginBottom: "3px" }}>
             {hoveredSeat.id} • {hoveredSeat.name}
           </div>
           <div style={{ fontSize: "0.78rem", color: "#cbd5e1" }}>
             {hoveredSeat.zoneName}
           </div>
-          <div style={{ fontSize: "0.76rem", fontWeight: 700, marginTop: "4px", color: hoveredSeat.isOccupied ? "#f87171" : "#34d399" }}>
-            {hoveredSeat.isOccupied ? "● Məşğuldur (Dolu)" : "✓ Boşdur • Seçmək üçün klikləyin"}
+          <div style={{ 
+            fontSize: "0.78rem", 
+            fontWeight: 700, 
+            marginTop: "6px", 
+            color: hoveredSeat.isOccupied ? "#f87171" : "#34d399",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px"
+          }}>
+            {hoveredSeat.isOccupied ? (
+              <>
+                <FaTimes size={11} /> Məşğuldur
+              </>
+            ) : (
+              <>
+                <FaCheck size={11} /> Boşdur • Seçmək üçün klikləyin
+              </>
+            )}
           </div>
         </div>
       )}
