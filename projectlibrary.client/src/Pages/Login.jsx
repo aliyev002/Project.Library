@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaBookReader } from 'react-icons/fa';
+import { useAuth } from '../Context/AuthContext';
+import { loginUser } from '../Api/authApi';
 
-const Login = ({ onLoginSuccess, setIsLoggedIn }) => {
+const Login = () => {
+    const { login } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -20,48 +22,27 @@ const Login = ({ onLoginSuccess, setIsLoggedIn }) => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        fetch('https://localhost:7108/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('Email və ya şifrə yanlışdır');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                toast.success('Uğurla daxil oldunuz!');
-                sessionStorage.setItem('token', data.token);
-                sessionStorage.setItem('userId', data.user.id);
-                sessionStorage.setItem('role', data.user.role);
+        try {
+            const data = await loginUser(formData);
+            toast.success('Uğurla daxil oldunuz!');
+            login(data.token, data.user);
 
-                if (onLoginSuccess) {
-                    onLoginSuccess(data.user.role);
-                } else if (setIsLoggedIn) {
-                    setIsLoggedIn(true);
-                }
-
-                if (data.user.role === 'Admin') {
-                    navigate('/admin-dashboard');
-                } else {
-                    navigate('/home');
-                }
-            })
-            .catch((error) => {
-                console.error('Xəta:', error);
-                toast.error(error.message || 'Daxilolma zamanı xəta baş verdi!');
-            })
-            .finally(() => {
-                setIsSubmitting(false);
-            });
+            if (data.user?.role === 'Admin') {
+                navigate('/admin-dashboard');
+            } else {
+                navigate('/home');
+            }
+        } catch (error) {
+            console.error('Xəta:', error);
+            const msg = error.response?.data?.message || 'Email və ya şifrə yanlışdır!';
+            toast.error(msg);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -74,8 +55,6 @@ const Login = ({ onLoginSuccess, setIsLoggedIn }) => {
             padding: '20px',
             position: 'relative'
         }}>
-            <ToastContainer position="top-right" autoClose={3000} />
-
             <div style={{
                 width: '100%',
                 maxWidth: '440px',

@@ -1,4 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
 :root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+
   --primary: #7B2D4A;
   --primary-hover: #63233A;
   --primary-light: #FDF2F5;
@@ -27,16 +32,89 @@
   --status-overdue-text: #DC2626;
 
   --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.06);
-  --shadow-hover: 0 16px 32px -4px rgba(15, 23, 42, 0.12);
-  --shadow-primary: 0 6px 20px rgba(123, 45, 74, 0.25);
+  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-hover: 0 20px 40px -6px rgba(15, 23, 42, 0.12), 0 8px 16px -4px rgba(15, 23, 42, 0.06);
+  --shadow-primary: 0 8px 25px rgba(123, 45, 74, 0.28);
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
   --radius-pill: 9999px;
 
-  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme='dark'] {
+  --bg-main: #0b0f19;
+  --bg-card: #162032;
+  --bg-sidebar: #090d16;
+  --text-title: #f8fafc;
+  --text-body: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #243247;
+  --border-light: #162032;
+}
+
+[data-theme='dark'] body {
+  background-color: var(--bg-main);
+  color: var(--text-body);
+}
+
+[data-theme='dark'] .card-modern {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-body) !important;
+}
+
+[data-theme='dark'] .card-modern:hover {
+  border-color: #3b82f6 !important;
+}
+
+[data-theme='dark'] .btn-secondary-custom {
+  background-color: var(--bg-card) !important;
+  color: var(--text-title) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme='dark'] .btn-secondary-custom:hover {
+  background-color: var(--border-color) !important;
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] input,
+[data-theme='dark'] select,
+[data-theme='dark'] textarea {
+  background-color: #101726 !important;
+  color: #f8fafc !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme='dark'] input::placeholder,
+[data-theme='dark'] textarea::placeholder {
+  color: #64748b !important;
+}
+
+[data-theme='dark'] table {
+  background-color: var(--bg-card) !important;
+  color: var(--text-body) !important;
+}
+
+[data-theme='dark'] table thead tr {
+  background-color: #0d1522 !important;
+  color: var(--text-title) !important;
+}
+
+[data-theme='dark'] table tbody tr {
+  border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme='dark'] table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+[data-theme='dark'] header {
+  background-color: rgba(22, 32, 50, 0.95) !important;
+  border-bottom-color: var(--border-color) !important;
 }
 
 * {
@@ -209,4 +287,206 @@ a {
     margin-left: 0;
     padding: 20px;
   }
+}
+
+/* ===================================================
+   MODERN MINIMALIST TOAST & NOTIFICATION STYLING
+   =================================================== */
+
+@keyframes slideInPopover {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulseNotification {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Notification Popover Portal */
+.notification-popover-portal {
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.notification-popover-portal * {
+  box-sizing: border-box;
+}
+
+.notification-popover-portal::-webkit-scrollbar,
+.notification-popover-portal *::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-popover-portal::-webkit-scrollbar-thumb,
+.notification-popover-portal *::-webkit-scrollbar-thumb {
+  background-color: var(--border-color, #cbd5e1);
+  border-radius: 6px;
+}
+
+/* Toastify Container & Modern Cards */
+.Toastify__toast-container {
+  width: 380px !important;
+  max-width: 94vw !important;
+  padding: 16px !important;
+  z-index: 99999999 !important;
+}
+
+.Toastify__toast {
+  border-radius: 16px !important;
+  padding: 14px 18px !important;
+  min-height: 64px !important;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 0.89rem !important;
+  line-height: 1.45 !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.16), 0 4px 12px -2px rgba(15, 23, 42, 0.06) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+  border: 1px solid rgba(226, 232, 240, 0.85) !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  color: #1e293b !important;
+}
+
+.Toastify__toast:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 24px 48px -8px rgba(15, 23, 42, 0.22) !important;
+}
+
+/* Modern Left Accent Indicators */
+.Toastify__toast--success {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-left: 4px solid #10b981 !important;
+  color: #0f172a !important;
+}
+
+.Toastify__toast--info {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-left: 4px solid #3b82f6 !important;
+  color: #0f172a !important;
+}
+
+.Toastify__toast--warning {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-left: 4px solid #f59e0b !important;
+  color: #0f172a !important;
+}
+
+.Toastify__toast--error {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #0f172a !important;
+}
+
+.Toastify__toast-body {
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font-weight: 500 !important;
+}
+
+.Toastify__toast-icon {
+  width: 22px !important;
+  height: 22px !important;
+  margin-right: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+.Toastify__progress-bar {
+  height: 3px !important;
+  border-radius: 0 0 16px 16px !important;
+  opacity: 0.9 !important;
+}
+
+.Toastify__progress-bar--success {
+  background: #10b981 !important;
+}
+
+.Toastify__progress-bar--info {
+  background: #3b82f6 !important;
+}
+
+.Toastify__progress-bar--warning {
+  background: #f59e0b !important;
+}
+
+.Toastify__progress-bar--error {
+  background: #ef4444 !important;
+}
+
+.Toastify__close-button {
+  color: #94a3b8 !important;
+  opacity: 0.7 !important;
+  align-self: flex-start !important;
+  margin-top: -2px !important;
+  padding: 4px !important;
+  border-radius: 6px !important;
+  transition: all 0.2s !important;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1 !important;
+  color: #1e293b !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Dark Theme Support for Toasts & Popovers */
+[data-theme='dark'] .Toastify__toast {
+  background-color: rgba(22, 32, 50, 0.96) !important;
+  color: #f8fafc !important;
+  border-color: rgba(51, 65, 85, 0.8) !important;
+  box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.5), 0 4px 14px -2px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme='dark'] .Toastify__toast--success {
+  background: rgba(22, 32, 50, 0.98) !important;
+  border-left: 4px solid #10b981 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme='dark'] .Toastify__toast--info {
+  background: rgba(22, 32, 50, 0.98) !important;
+  border-left: 4px solid #38bdf8 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme='dark'] .Toastify__toast--warning {
+  background: rgba(22, 32, 50, 0.98) !important;
+  border-left: 4px solid #f59e0b !important;
+  color: #f8fafc !important;
+}
+
+[data-theme='dark'] .Toastify__toast--error {
+  background: rgba(22, 32, 50, 0.98) !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme='dark'] .Toastify__close-button {
+  color: #64748b !important;
+}
+
+[data-theme='dark'] .Toastify__close-button:hover {
+  color: #f8fafc !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }

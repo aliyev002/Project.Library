@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaUserPlus } from 'react-icons/fa';
+import { registerUser } from '../Api/authApi';
 
 const Auth = () => {
     const [formData, setFormData] = useState({
@@ -21,37 +21,23 @@ const Auth = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        fetch('https://localhost:7108/api/auth/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-        })
-            .then(async (response) => {
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message || (Array.isArray(data) ? data[0]?.description : 'Qeydiyyat zamanı xəta baş verdi'));
-                }
-                return data;
-            })
-            .then(() => {
-                toast.success('Qeydiyyat uğurla tamamlandı! İndi daxil ola bilərsiniz.');
-                setTimeout(() => {
-                    navigate('/login');
-                }, 1200);
-            })
-            .catch((error) => {
-                console.error('Xəta:', error);
-                toast.error(error.message || 'Qeydiyyat zamanı xəta baş verdi.');
-            })
-            .finally(() => {
-                setIsSubmitting(false);
-            });
+        try {
+            await registerUser(formData);
+            toast.success('Qeydiyyat uğurla tamamlandı! İndi daxil ola bilərsiniz.');
+            setTimeout(() => {
+                navigate('/login');
+            }, 1200);
+        } catch (error) {
+            console.error('Xəta:', error);
+            const msg = error.response?.data?.message || (Array.isArray(error.response?.data?.errors) ? error.response.data.errors[0]?.description : 'Qeydiyyat zamanı xəta baş verdi.');
+            toast.error(msg);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -64,8 +50,6 @@ const Auth = () => {
             padding: '20px',
             position: 'relative'
         }}>
-            <ToastContainer position="top-right" autoClose={3000} />
-
             <div style={{
                 width: '100%',
                 maxWidth: '460px',

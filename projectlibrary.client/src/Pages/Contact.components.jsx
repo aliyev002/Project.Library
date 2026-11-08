@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { 
   FaPhoneAlt, 
   FaEnvelope, 
@@ -30,7 +29,6 @@ const Contact = () => {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 24px' }}>
-      <ToastContainer position="top-right" autoClose={3000} />
 
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '48px', maxWidth: '650px', margin: '0 auto 48px' }}>

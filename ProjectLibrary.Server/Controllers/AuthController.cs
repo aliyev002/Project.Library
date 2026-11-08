@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using ProjectLibrary.Entities.Concrete;
 using ProjectLibrary.Entities.Dtos;
-
 
 namespace LibraryManagement.Controllers
 {
@@ -28,94 +27,84 @@ namespace LibraryManagement.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto model)
         {
-            // İcazə verilən domenlər
-            var allowedDomains = new List<string> { "gmail.com", "outlook.com", "mail.ru" };
-
-            
-            var emailDomain = model.Email.Split('@').Last().ToLower();
-
-            
-            if (!allowedDomains.Contains(emailDomain))
+            if (model == null || string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
             {
-                return BadRequest(new { message = "Yalnız aşağıdakı e-mail domenlərinə icazə verilir: gmail.com, outlook.com, mail.ru" });
+                return BadRequest(new { message = "Məlumatlar tam daxil edilməyib." });
             }
 
-            // Eyni e-mail ilə istifadəçi varsa
+            var parts = model.Email.Split('@');
+            if (parts.Length != 2)
+            {
+                return BadRequest(new { message = "Düzgün e-mail ünvanı daxil edin." });
+            }
+
+            var emailDomain = parts[1].ToLower();
+            var allowedDomains = new List<string> { "gmail.com", "outlook.com", "mail.ru", "library.com", "code.edu.az" };
+
+            if (!allowedDomains.Contains(emailDomain))
+            {
+                return BadRequest(new { message = "Yalnız aşağıdakı e-mail domenlərinə icazə verilir: gmail.com, outlook.com, mail.ru, library.com" });
+            }
+
             var existingUser = await _userManager.FindByEmailAsync(model.Email);
             if (existingUser != null)
             {
-                return BadRequest(new { message = "Bu email ilə artıq qeydiyyat mövcuddur." });
+                return BadRequest(new { message = "Bu e-mail ilə artıq qeydiyyat mövcuddur." });
             }
+
+            var role = LibraryConstants.Roles.User;
 
             var user = new User
             {
-                UserName = model.Email.Split('@')[0],
+                UserName = parts[0] + "_" + Guid.NewGuid().ToString("N")[..4],
                 Email = model.Email,
                 FullName = model.FullName,
-                Role = "User"
+                Role = role
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
-
             if (!result.Succeeded)
-                return BadRequest(result.Errors);
+            {
+                var errorMsg = result.Errors.FirstOrDefault()?.Description ?? "Qeydiyyat zamanı xəta baş verdi.";
+                return BadRequest(new { message = errorMsg, errors = result.Errors });
+            }
 
-            return Ok(new { message = "İstifadəçi uğurla qeydiyyatdan keçdi!" });
+            await _userManager.AddToRoleAsync(user, role);
+
+            return Ok(new { message = "İstifadəçi uğurla qeydiyyatdan keçdi! İndi daxil ola bilərsiniz." });
         }
-
-
-        //[HttpPost("login")]
-        //public async Task<IActionResult> Login([FromBody] LoginDto model)
-        //{
-        //    var user = await _userManager.FindByEmailAsync(model.Email);
-        //    if (user == null)
-        //        return Unauthorized("Invalid email or password");
-
-        //    var result = await _signInManager.PasswordSignInAsync(user.Email, model.Password, false, false);
-        //    if (!result.Succeeded)
-        //        return Unauthorized("Invalid email or password");
-
-        //    var token = GenerateJwtToken(user);
-        //    return Ok(new { token });
-        //}
-
-        //[HttpPost("login")]
-        //public async Task<IActionResult> Login([FromBody] LoginDto model)
-        //{
-        //    var user = await _userManager.FindByEmailAsync(model.Email);
-        //    if (user == null)
-        //        return Unauthorized("Invalid credentials");
-
-        //    var isValidPassword = await _userManager.CheckPasswordAsync(user, model.Password);
-        //    if (!isValidPassword)
-        //        return Unauthorized("Invalid credentials");
-
-        //    var token = GenerateJwtToken(user);
-        //    return Ok(new { token });
-        //}
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
+            if (model == null || string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
+            {
+                return BadRequest(new { message = "Email və şifrə tələb olunur." });
+            }
+
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
-                return Unauthorized(new { message = "Invalid credentials" });
+            {
+                return Unauthorized(new { message = "Email və ya şifrə yanlışdır." });
+            }
 
             var isValidPassword = await _userManager.CheckPasswordAsync(user, model.Password);
             if (!isValidPassword)
-                return Unauthorized(new { message = "Invalid credentials" });
-            var role = user.Role;
+            {
+                return Unauthorized(new { message = "Email və ya şifrə yanlışdır." });
+            }
+
             var token = GenerateJwtToken(user);
+
             return Ok(new
             {
                 token,
                 user = new
                 {
-                    user.Id,
-                    user.Email,
-                    user.FullName,
-                    //user.Role
-                    role
+                    id = user.Id,
+                    email = user.Email,
+                    fullName = user.FullName,
+                    role = user.Role
                 }
             });
         }
@@ -124,17 +113,20 @@ namespace LibraryManagement.Controllers
         {
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName ?? user.Email ?? ""),
+                new Claim(ClaimTypes.Email, user.Email ?? ""),
+                new Claim(ClaimTypes.Role, user.Role ?? LibraryConstants.Roles.User)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "SecretKeyDefaultMustBeLongEnough123456"));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
             var token = new JwtSecurityToken(
-                _configuration["Jwt:Issuer"],
-                _configuration["Jwt:Audience"],
-                claims,
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
                 expires: DateTime.UtcNow.AddDays(7),
                 signingCredentials: creds
             );

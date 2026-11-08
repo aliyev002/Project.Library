@@ -1,62 +1,69 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using ProjectLibrary.DataAccess.Data;
-using ProjectLibrary.Server.Services.Abstract; // EmailService interface-i burada olur
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using ProjectLibrary.Entities.Concrete;
+using ProjectLibrary.Server.Services.Abstract;
 
-public class BorrowReminderService : BackgroundService
+namespace ProjectLibrary.Business.Services.Concrete
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IEmailService _emailService;
-
-    public BorrowReminderService(IServiceProvider serviceProvider, IEmailService emailService)
+    public class BorrowReminderService : BackgroundService
     {
-        _serviceProvider = serviceProvider;
-        _emailService = emailService;
-    }
+        private readonly IServiceProvider _serviceProvider;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
+        public BorrowReminderService(IServiceProvider serviceProvider)
         {
-            using (var scope = _serviceProvider.CreateScope())
+            _serviceProvider = serviceProvider;
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
             {
-                var dbContext = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
-
-                var now = DateTime.UtcNow;
-
-                // Vaxtı keçmiş borrowed book-ları tap
-                var overdueBorrowedBooks = await dbContext.BorrowedBooks
-                    .Include(bb => bb.Book)
-                    .Where(bb => bb.Status == "borrowed" && bb.ReturnDate <= now)
-                    .ToListAsync();
-
-                foreach (var borrowedBook in overdueBorrowedBooks)
+                try
                 {
-                    // İstifadəçinin emailini tapmalısan
-                    var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == borrowedBook.UserId);
-                    if (user != null)
-                    {
-                        string email = user.Email;
-                        string subject = "Library Reminder: Book Return";
-                        string message = $"Dear {user.FullName},<br><br>Your borrowing period for the book <b>{borrowedBook.Book.Title}</b> has expired. Please return it as soon as possible.<br><br>Thanks!";
+                    using var scope = _serviceProvider.CreateScope();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+                    var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
-                        await _emailService.SendEmailAsync(email, subject, message);
+                    var now = DateTime.UtcNow;
+
+                    // Vaxtı keçmiş aktiv icarələri tap
+                    var overdueBorrowedBooks = await dbContext.BorrowedBooks
+                        .Include(bb => bb.Book)
+                        .Include(bb => bb.User)
+                        .Where(bb => bb.Status == LibraryConstants.BorrowStatus.Borrowed && bb.ReturnDate <= now)
+                        .ToListAsync(stoppingToken);
+
+                    foreach (var borrowedBook in overdueBorrowedBooks)
+                    {
+                        if (borrowedBook.User != null && !string.IsNullOrEmpty(borrowedBook.User.Email))
+                        {
+                            string email = borrowedBook.User.Email;
+                            string subject = "Kitabxana Xəbərdarlığı: İcarə Müddəti Bitib";
+                            string message = $"Hörmətli {borrowedBook.User.FullName},<br><br>"
+                                           + $"<strong>'{borrowedBook.Book.Title}'</strong> kitabı üçün icarə müddətiniz bitmişdir. "
+                                           + "Zəhmət olmasa kitabı ən qısa zamanda kitabxanaya təhvil verin.<br><br>Hörmətlə,<br>Kitabxana İdarəetmə Sistemi";
+
+                            await emailService.SendEmailAsync(email, subject, message);
+                        }
+
+                        borrowedBook.Status = LibraryConstants.BorrowStatus.Overdue;
                     }
 
-                    // İstəsən burada avtomatik olaraq Status-u "overdue" da edə bilərsən
-                    borrowedBook.Status = "overdue";
+                    if (overdueBorrowedBooks.Any())
+                    {
+                        await dbContext.SaveChangesAsync(stoppingToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[BorrowReminderService] Error: {ex.Message}");
                 }
 
-                await dbContext.SaveChangesAsync();
+                // Hər 30 dəqiqədən bir yoxla
+                await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken);
             }
-
-            // Hər 1 dəqiqədən bir yoxla
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 }

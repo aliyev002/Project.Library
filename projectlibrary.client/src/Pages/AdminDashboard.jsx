@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { 
   FaPlus, 
   FaSearch, 
@@ -10,14 +9,20 @@ import {
   FaTrashAlt, 
   FaLayerGroup, 
   FaCheckCircle, 
-  FaTimesCircle,
-  FaUserEdit,
-  FaImage
+  FaTimesCircle, 
+  FaUserEdit, 
+  FaImage,
+  FaExchangeAlt,
+  FaBookmark,
+  FaUsers
 } from 'react-icons/fa';
 import './Admin.css';
+import { getAllBooks, addBook, editBook, deleteBook } from '../Api/bookApi';
+import { getAdminSummary } from '../Api/statsApi';
 
 const AdminDashboard = () => {
     const [books, setBooks] = useState([]);
+    const [stats, setStats] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -33,92 +38,85 @@ const AdminDashboard = () => {
         imageUrl: ""
     });
 
-    const token = sessionStorage.getItem("token");
-
     useEffect(() => {
-        fetchBooks();
+        loadData();
     }, []);
 
-    const fetchBooks = () => {
+    const loadData = async () => {
         setLoading(true);
-        fetch("https://localhost:7108/api/books/all")
-            .then((res) => {
-                if (!res.ok) throw new Error("Kitabları yükləmək mümkün olmadı");
-                return res.json();
-            })
-            .then((data) => setBooks(Array.isArray(data) ? data : []))
-            .catch((err) => {
-                console.error("Kitablar yüklənmədi:", err);
-                toast.error("Kitablar yüklənərkən xəta baş verdi");
-            })
-            .finally(() => setLoading(false));
+        try {
+            const [booksData, statsData] = await Promise.allSettled([
+                getAllBooks(),
+                getAdminSummary()
+            ]);
+            if (booksData.status === "fulfilled") {
+                setBooks(Array.isArray(booksData.value) ? booksData.value : []);
+            }
+            if (statsData.status === "fulfilled") {
+                setStats(statsData.value);
+            }
+        } catch (err) {
+            console.error("Məlumatlar yüklənmədi:", err);
+            toast.error("Məlumatlar yüklənərkən xəta baş verdi");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleAddBook = (e) => {
+    const fetchBooks = async () => {
+        try {
+            const data = await getAllBooks();
+            setBooks(Array.isArray(data) ? data : []);
+            const summary = await getAdminSummary();
+            setStats(summary);
+        } catch (err) {
+            console.error("Kitablar yenilənmədi:", err);
+        }
+    };
+
+    const handleAddBook = async (e) => {
         e.preventDefault();
         const copies = parseInt(newBook.totalCopies, 10) || 1;
         const bookToAdd = {
             ...newBook,
             totalCopies: copies,
-            availableCopies: copies,
-            borrowedBooks: [],
-            reservations: []
+            availableCopies: copies
         };
 
-        fetch("https://localhost:7108/api/books/add", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(bookToAdd)
-        })
-            .then((res) => {
-                if (!res.ok) throw new Error("Kitab əlavə edilərkən xəta baş verdi");
-                return res.json();
-            })
-            .then(() => {
-                toast.success("Yeni kitab uğurla əlavə edildi!");
-                setShowModal(false);
-                setNewBook({
-                    title: "",
-                    author: "",
-                    genre: "",
-                    totalCopies: "",
-                    description: "",
-                    imageUrl: ""
-                });
-                fetchBooks();
-            })
-            .catch((err) => {
-                console.error("Xəta:", err);
-                toast.error(err.message || "Kitab əlavə edilə bilmədi");
+        try {
+            await addBook(bookToAdd);
+            toast.success("Yeni kitab uğurla əlavə edildi!");
+            setShowModal(false);
+            setNewBook({
+                title: "",
+                author: "",
+                genre: "",
+                totalCopies: "",
+                description: "",
+                imageUrl: ""
             });
+            await fetchBooks();
+        } catch (err) {
+            console.error("Xəta:", err);
+            const msg = err.response?.data?.message || "Kitab əlavə edilə bilmədi";
+            toast.error(msg);
+        }
     };
 
-    const handleDeleteBook = (id) => {
+    const handleDeleteBook = async (id) => {
         if (!window.confirm("Bu kitabı sistemdən silmək istədiyinizə əminsiniz?")) {
             return;
         }
 
-        fetch(`https://localhost:7108/api/books/delete/${id}`, {
-            method: 'DELETE',
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            }
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('Kitab silinərkən xəta baş verdi (icarədə ola bilər)');
-                }
-                toast.success("Kitab uğurla silindi!");
-                fetchBooks();
-            })
-            .catch((err) => {
-                console.error("Xəta:", err);
-                toast.error(err.message || "Kitab silinə bilmədi");
-            });
+        try {
+            await deleteBook(id);
+            toast.success("Kitab uğurla silindi!");
+            await fetchBooks();
+        } catch (err) {
+            console.error("Xəta:", err);
+            const msg = err.response?.data?.message || "Kitab silinə bilmədi (icarədə ola bilər)";
+            toast.error(msg);
+        }
     };
 
     const handleEditBook = (book) => {
@@ -126,7 +124,7 @@ const AdminDashboard = () => {
         setShowEditModal(true);
     };
 
-    const handleSaveEdit = (e) => {
+    const handleSaveEdit = async (e) => {
         e.preventDefault();
         if (!selectedBook) return;
 
@@ -137,37 +135,28 @@ const AdminDashboard = () => {
             availableCopies: parseInt(selectedBook.availableCopies, 10)
         };
 
-        fetch(`https://localhost:7108/api/books/edit/${id}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-        })
-            .then((res) => {
-                if (!res.ok) throw new Error("Məlumatlar yenilənərkən xəta baş verdi");
-                return res.json();
-            })
-            .then(() => {
-                toast.success("Kitab məlumatları yeniləndi!");
-                setShowEditModal(false);
-                fetchBooks();
-            })
-            .catch((err) => {
-                console.error("Redaktə xətası:", err);
-                toast.error(err.message || "Yeniləmək mümkün olmadı");
-            });
+        try {
+            await editBook(id, payload);
+            toast.success("Kitab məlumatları yeniləndi!");
+            setShowEditModal(false);
+            await fetchBooks();
+        } catch (err) {
+            console.error("Redaktə xətası:", err);
+            const msg = err.response?.data?.message || "Yeniləmək mümkün olmadı";
+            toast.error(msg);
+        }
     };
 
     // Stats
-    const stats = useMemo(() => {
-        const totalTitles = books.length;
-        const totalCopies = books.reduce((acc, b) => acc + (b.totalCopies ?? b.TotalCopies ?? 0), 0);
-        const availableCopies = books.reduce((acc, b) => acc + (b.availableCopies ?? b.AvailableCopies ?? 0), 0);
-        const borrowedCount = totalCopies - availableCopies;
-        return { totalTitles, totalCopies, availableCopies, borrowedCount };
-    }, [books]);
+    const displayStats = useMemo(() => {
+        const totalTitles = stats?.totalBooks ?? books.length;
+        const totalCopies = stats?.totalCopies ?? books.reduce((acc, b) => acc + (b.totalCopies ?? b.TotalCopies ?? 0), 0);
+        const availableCopies = stats?.availableCopies ?? books.reduce((acc, b) => acc + (b.availableCopies ?? b.AvailableCopies ?? 0), 0);
+        const borrowedCount = stats?.activeBorrows ?? (totalCopies - availableCopies);
+        const pendingRes = stats?.pendingReservations ?? 0;
+        const totalUsers = stats?.totalUsers ?? 0;
+        return { totalTitles, totalCopies, availableCopies, borrowedCount, pendingRes, totalUsers };
+    }, [books, stats]);
 
     const filteredBooks = useMemo(() => {
         return books.filter(b => 
@@ -179,7 +168,6 @@ const AdminDashboard = () => {
 
     return (
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-            <ToastContainer position="top-right" autoClose={3000} />
 
             {/* Top Bar Header */}
             <div style={{
@@ -211,8 +199,8 @@ const AdminDashboard = () => {
             {/* Top Stat Cards */}
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                gap: '20px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
                 marginBottom: '32px'
             }}>
                 <div className="stat-card">
@@ -220,8 +208,8 @@ const AdminDashboard = () => {
                         <FaBook />
                     </div>
                     <div>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Ümumi Kitab</span>
-                        <h3 style={{ margin: 0, fontSize: '1.7rem', color: 'var(--text-title)' }}>{stats.totalTitles}</h3>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Cəmi Kitab</span>
+                        <h3 style={{ margin: 0, fontSize: '1.6rem', color: 'var(--text-title)' }}>{displayStats.totalTitles}</h3>
                     </div>
                 </div>
 
@@ -230,8 +218,8 @@ const AdminDashboard = () => {
                         <FaLayerGroup />
                     </div>
                     <div>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Cəmi Nüsxə</span>
-                        <h3 style={{ margin: 0, fontSize: '1.7rem', color: 'var(--text-title)' }}>{stats.totalCopies}</h3>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Cəmi Nüsxə</span>
+                        <h3 style={{ margin: 0, fontSize: '1.6rem', color: 'var(--text-title)' }}>{displayStats.totalCopies}</h3>
                     </div>
                 </div>
 
@@ -240,18 +228,38 @@ const AdminDashboard = () => {
                         <FaCheckCircle />
                     </div>
                     <div>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Mövcud Nüsxə</span>
-                        <h3 style={{ margin: 0, fontSize: '1.7rem', color: '#059669' }}>{stats.availableCopies}</h3>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Mövcud Nüsxə</span>
+                        <h3 style={{ margin: 0, fontSize: '1.6rem', color: '#059669' }}>{displayStats.availableCopies}</h3>
                     </div>
                 </div>
 
                 <div className="stat-card">
                     <div className="stat-icon" style={{ backgroundColor: '#FFFBEB', color: '#D97706' }}>
-                        <FaTimesCircle />
+                        <FaExchangeAlt />
                     </div>
                     <div>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>İcarədə Olan</span>
-                        <h3 style={{ margin: 0, fontSize: '1.7rem', color: '#D97706' }}>{stats.borrowedCount}</h3>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>İcarədə Olan</span>
+                        <h3 style={{ margin: 0, fontSize: '1.6rem', color: '#D97706' }}>{displayStats.borrowedCount}</h3>
+                    </div>
+                </div>
+
+                <div className="stat-card">
+                    <div className="stat-icon" style={{ backgroundColor: '#F3E8FF', color: '#7C3AED' }}>
+                        <FaBookmark />
+                    </div>
+                    <div>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Rezervasiyalar</span>
+                        <h3 style={{ margin: 0, fontSize: '1.6rem', color: '#7C3AED' }}>{displayStats.pendingRes}</h3>
+                    </div>
+                </div>
+
+                <div className="stat-card">
+                    <div className="stat-icon" style={{ backgroundColor: '#F0FDF4', color: '#16A34A' }}>
+                        <FaUsers />
+                    </div>
+                    <div>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>İstifadəçilər</span>
+                        <h3 style={{ margin: 0, fontSize: '1.6rem', color: '#16A34A' }}>{displayStats.totalUsers}</h3>
                     </div>
                 </div>
             </div>

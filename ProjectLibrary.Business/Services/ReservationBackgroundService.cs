@@ -1,47 +1,68 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ProjectLibrary.DataAccess.Data;
+using ProjectLibrary.Entities.Concrete;
+using ProjectLibrary.Server.Services.Abstract;
 
-
-public class ReservationBackgroundService : BackgroundService
+namespace ProjectLibrary.Business.Services.Concrete
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-
-    public ReservationBackgroundService(IServiceScopeFactory scopeFactory)
+    public class ReservationBackgroundService : BackgroundService
     {
-        _scopeFactory = scopeFactory;
-    }
+        private readonly IServiceScopeFactory _scopeFactory;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
+        public ReservationBackgroundService(IServiceScopeFactory scopeFactory)
         {
-            using (var scope = _scopeFactory.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
-                var reservations = await dbContext.Reservations
-                    .Where(r => !(r.Status=="IsNotified"))
-                    .ToListAsync();
+            _scopeFactory = scopeFactory;
+        }
 
-                foreach (var reservation in reservations)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
                 {
-                    var book = await dbContext.Books.FindAsync(reservation.BookId);
-                    if (book.TotalCopies > 0)
+                    using var scope = _scopeFactory.CreateScope();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+                    var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+                    var pendingReservations = await dbContext.Reservations
+                        .Include(r => r.User)
+                        .Include(r => r.Book)
+                        .Where(r => r.Status == LibraryConstants.ReservationStatus.Pending)
+                        .ToListAsync(stoppingToken);
+
+                    foreach (var reservation in pendingReservations)
                     {
-                        var user = await dbContext.Users.FindAsync(reservation.UserId);
-                        if (user != null)
+                        if (reservation.Book != null && reservation.Book.AvailableCopies > 0)
                         {
-                            Console.WriteLine($"Notification: {user.FullName}, the book '{book.Title}' is now available.");
-                            reservation.Status ="IsNotified" ;
+                            reservation.Status = LibraryConstants.ReservationStatus.Approved;
+
+                            if (reservation.User != null && !string.IsNullOrEmpty(reservation.User.Email))
+                            {
+                                string subject = "Rezervasiya etdiyiniz kitab artıq mövcuddur!";
+                                string message = $"Hörmətli {reservation.User.FullName},<br><br>"
+                                               + $"Rezerv etdiyiniz <strong>'{reservation.Book.Title}'</strong> kitabı artıq kitabxanadadır və sizin üçün ayrılmışdır. "
+                                               + "Zəhmət olmasa yaxınlaşaraq kitabı təhvil alın.<br><br>Hörmətlə,<br>Kitabxana İdarəetmə Sistemi";
+
+                                await emailService.SendEmailAsync(reservation.User.Email, subject, message);
+                            }
                         }
                     }
+
+                    if (pendingReservations.Any())
+                    {
+                        await dbContext.SaveChangesAsync(stoppingToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ReservationBackgroundService] Error: {ex.Message}");
                 }
 
-                await dbContext.SaveChangesAsync();
+                // Hər 5 dəqiqədən bir yoxla
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
-
-            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); // 5deyqeden bir yoxlama
         }
     }
 }

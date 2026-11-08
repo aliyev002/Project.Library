@@ -1,195 +1,10 @@
-﻿//using Microsoft.AspNetCore.Authorization;
-//using Microsoft.AspNetCore.Http;
-//using Microsoft.AspNetCore.Mvc;
-//using Microsoft.EntityFrameworkCore;
-//using ProjectLibrary.DataAccess.Data;
-//using ProjectLibrary.Entities.Concrete;
-//using System.Security.Claims;
-
-//namespace ProjectLibrary.Server.Controllers
-//{
-//    [Route("api/borrow")]
-//    [ApiController]
-//    public class BorrowController : ControllerBase
-//    {
-//        private readonly LibraryDbContext _context;
-
-//        public BorrowController(LibraryDbContext context)
-//        {
-//            _context = context;
-//        }
-
-//        //[HttpPost("borrow/{bookId}")]
-//        //[Authorize]
-//        //public async Task<IActionResult> BorrowBook(int bookId)
-//        //{
-//        //    var userId = (User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-//        //    var book = await _context.Books.FindAsync(bookId);
-
-//        //    if (book == null || book.TotalCopies == 1)
-//        //        return BadRequest("Book is not available.");
-
-//        //    var borrowedBook = new BorrowedBook
-//        //    {
-//        //        UserId = userId.ToString(),
-//        //        BookId = bookId,
-//        //        ReturnDate = DateTime.UtcNow.AddDays(14) //2 heftelik icaze
-//        //    };
-
-//        //    book.AvailableCopies -= 1;
-//        //    _context.BorrowedBooks.Add(borrowedBook);
-//        //    await _context.SaveChangesAsync();
-
-//        //    return Ok(new { message = "Book borrowed successfully", dueDate = borrowedBook.ReturnDate });
-//        //}
-//        [HttpPost("borrow/{bookId}")]
-//        [Authorize]
-//        public async Task<IActionResult> BorrowBook(int bookId)
-//        {
-//            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-//            var book = await _context.Books.FindAsync(bookId);
-
-//            if (book == null || book.AvailableCopies <= 0)
-//                return BadRequest("Book is not available.");
-
-//            // ❗ Check if user already has this book borrowed and not yet returned
-//            var alreadyBorrowed = await _context.BorrowedBooks
-//                .AnyAsync(bb => bb.UserId == userId && bb.BookId == bookId && bb.Status != "returned");
-
-//            if (alreadyBorrowed)
-//                return BadRequest("You have already borrowed this book. Please return it before borrowing again.");
-
-//            var borrowedBook = new BorrowedBook
-//            {
-//                UserId = userId,
-//                BookId = bookId,
-//                //ReturnDate = DateTime.UtcNow.AddDays(14),
-//                ReturnDate = DateTime.UtcNow.AddMinutes(3),
-//                Status = "borrowed" // ← Make sure you set this on creation
-//            };
-
-//            book.AvailableCopies -= 1;
-//            _context.BorrowedBooks.Add(borrowedBook);
-//            await _context.SaveChangesAsync();
-
-//            return Ok(new { message = "Book borrowed successfully", dueDate = borrowedBook.ReturnDate });
-//        }
-
-//        [HttpPost("return/{borrowId}")]
-//        [Authorize]
-//        public async Task<IActionResult> ReturnBook(int borrowId)
-//        {
-//            var borrowedBook = await _context.BorrowedBooks.FindAsync(borrowId);
-
-//            if (borrowedBook == null || borrowedBook.Status == "returned")
-//                return BadRequest("Invalid return request.");
-
-//            var book = await _context.Books.FindAsync(borrowedBook.BookId);
-//            book.AvailableCopies += 1;
-//            borrowedBook.Status = "returned";
-
-//            await _context.SaveChangesAsync();
-//            return Ok(new { message = "Book returned successfully" });
-//        }
-//        [HttpGet("user/{userId}/all")]
-//        [Authorize]
-//        public async Task<IActionResult> GetAllBorrowedBooksByUser(string userId)
-//        {
-//            var borrowedBooks = await _context.BorrowedBooks
-//                .Include(bb => bb.Book)
-//                .Where(bb => bb.UserId == userId)
-//                .Select(bb => new
-//                {
-//                    bb.BorrowId,
-//                    bb.BookId,
-//                    bb.Book.Title,
-//                    bb.Book.Author,
-//                    bb.Book.Genre,
-//                    bb.ReturnDate,
-//                    bb.Status
-//                })
-//                .ToListAsync();
-
-//            if (!borrowedBooks.Any())
-//                return NotFound("No borrowed books found for this user.");
-
-//            return Ok(borrowedBooks);
-//        }
-//        [HttpGet("user/{userId}/active")]
-//        [Authorize]
-//        public async Task<IActionResult> GetActiveBorrowedBooksByUser(string userId)
-//        {
-//            var borrowedBooks = await _context.BorrowedBooks
-//                .Include(bb => bb.Book)
-//                .Where(bb => bb.UserId == userId && bb.Status != "returned")
-//                .Select(bb => new
-//                {
-//                    bb.BorrowId,
-//                    bb.BookId,
-//                    bb.Book.Title,
-//                    bb.Book.Author,
-//                    bb.Book.Genre,
-//                    bb.ReturnDate,
-//                    bb.Status
-//                })
-//                .ToListAsync();
-
-//            if (!borrowedBooks.Any())
-//                return NotFound("No active borrowed books found for this user.");
-
-//            return Ok(borrowedBooks);
-//        }
-
-//        [HttpGet("getallborrowedbooks")]
-//        //[Authorize(Roles = "Admin")] // Only accessible by admins
-//        public async Task<IActionResult> GetAllBorrowedBooks()
-//        {
-//            var borrowedBooks = await _context.BorrowedBooks
-//                .Include(bb => bb.Book)
-//                .Include(bb => bb.User)
-//                .OrderByDescending(bb => bb.BorrowDate)
-//                .Select(bb => new
-//                {
-//                    BorrowId = bb.BorrowId,
-//                    BookInfo = new
-//                    {
-//                        bb.Book.BookId,
-//                        bb.Book.Title,
-//                        bb.Book.Author
-//                    },
-//                    UserInfo = new
-//                    {
-//                        UserId = bb.User.Id,
-//                        bb.User.FullName,
-//                        bb.User.Email
-//                    },
-//                    bb.BorrowDate,
-//                    bb.ReturnDate,
-//                    bb.Status,
-//                    IsOverdue = bb.Status == "borrowed" && bb.ReturnDate < DateTime.UtcNow
-//                })
-//                .ToListAsync();
-
-//            if (!borrowedBooks.Any())
-//                return NotFound("No borrowed books found in the system.");
-
-//            return Ok(borrowedBooks);
-//        }
-
-
-
-//    }
-
-
-//}
-
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectLibrary.DataAccess.Data;
 using ProjectLibrary.Entities.Concrete;
-using System.Security.Claims;
+using ProjectLibrary.Server.Services.Abstract;
 
 namespace ProjectLibrary.Server.Controllers
 {
@@ -198,183 +13,240 @@ namespace ProjectLibrary.Server.Controllers
     public class BorrowController : ControllerBase
     {
         private readonly LibraryDbContext _context;
+        private readonly IEmailService _emailService;
+        private readonly INotificationService _notificationService;
 
-        public BorrowController(LibraryDbContext context)
+        public BorrowController(LibraryDbContext context, IEmailService emailService, INotificationService notificationService)
         {
             _context = context;
+            _emailService = emailService;
+            _notificationService = notificationService;
         }
 
-        //[HttpPost("borrow/{bookId}")]
-        //[Authorize]
-        //public async Task<IActionResult> BorrowBook(int bookId)
-        //{
-        //    var userId = (User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-        //    var book = await _context.Books.FindAsync(bookId);
-
-        //    if (book == null || book.TotalCopies == 1)
-        //        return BadRequest("Book is not available.");
-
-        //    var borrowedBook = new BorrowedBook
-        //    {
-        //        UserId = userId.ToString(),
-        //        BookId = bookId,
-        //        ReturnDate = DateTime.UtcNow.AddDays(14) //2 heftelik icaze
-        //    };
-
-        //    book.AvailableCopies -= 1;
-        //    _context.BorrowedBooks.Add(borrowedBook);
-        //    await _context.SaveChangesAsync();
-
-        //    return Ok(new { message = "Book borrowed successfully", dueDate = borrowedBook.ReturnDate });
-        //}
+        // Kitabı icarəyə götürmək
         [HttpPost("borrow/{bookId}")]
         [Authorize]
         public async Task<IActionResult> BorrowBook(int bookId)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "İstifadəçi müəyyən edilmədi." });
+            }
+
             var book = await _context.Books.FindAsync(bookId);
+            if (book == null)
+            {
+                return NotFound(new { message = "Kitab tapılmadı." });
+            }
 
-            if (book == null || book.AvailableCopies <= 0)
-                return BadRequest("Book is not available.");
+            if (book.AvailableCopies <= 0)
+            {
+                return BadRequest(new { message = "Kitab hazırda bitib. İstəsəniz rezerv edə bilərsiniz." });
+            }
 
-            // ❗ Check if user already has this book borrowed and not yet returned
+            // İstifadəçinin artıq bu kitabı qaytarmayıb-qaytarmadığını yoxla
             var alreadyBorrowed = await _context.BorrowedBooks
-                .AnyAsync(bb => bb.UserId == userId && bb.BookId == bookId && bb.Status != "returned");
+                .AnyAsync(bb => bb.UserId == userId && bb.BookId == bookId && bb.Status != LibraryConstants.BorrowStatus.Returned);
 
             if (alreadyBorrowed)
-                return BadRequest("You have already borrowed this book. Please return it before borrowing again.");
+            {
+                return BadRequest(new { message = "Siz artıq bu kitabı icarəyə götürmüsünüz. Yeni nüsxə götürməzdən əvvəl mövcud olanı qaytarmalısınız." });
+            }
 
             var borrowedBook = new BorrowedBook
             {
                 UserId = userId,
                 BookId = bookId,
-                //ReturnDate = DateTime.UtcNow.AddDays(14),
-                ReturnDate = DateTime.UtcNow.AddMinutes(1),
-                Status = "borrowed" // ← Make sure you set this on creation
+                BorrowDate = DateTime.UtcNow,
+                ReturnDate = DateTime.UtcNow.AddDays(14), // 14 günlük standart icarə müddəti
+                Status = LibraryConstants.BorrowStatus.Borrowed
             };
 
             book.AvailableCopies -= 1;
-            _context.BorrowedBooks.Add(borrowedBook);
+            await _context.BorrowedBooks.AddAsync(borrowedBook);
+
+            // Əgər istifadəçinin bu kitab üçün rezervasiyası var idisə, onu Completed et
+            var userReservation = await _context.Reservations
+                .FirstOrDefaultAsync(r => r.UserId == userId && r.BookId == bookId &&
+                    (r.Status == LibraryConstants.ReservationStatus.Pending || r.Status == LibraryConstants.ReservationStatus.Approved));
+
+            if (userReservation != null)
+            {
+                userReservation.Status = LibraryConstants.ReservationStatus.Completed;
+            }
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Book borrowed successfully", dueDate = borrowedBook.ReturnDate });
+            var borrower = await _context.Users.FindAsync(userId);
+            var borrowerName = borrower?.FullName ?? "Oxucu";
+
+            // İstifadəçiyə və Adminlərə bildiriş
+            await _notificationService.SendNotificationAsync(
+                userId,
+                "İcarə Təsdiqləndi",
+                $"'{book.Title}' kitabını icarəyə götürdünüz. Son qaytarma tarixi: {borrowedBook.ReturnDate:dd.MM.yyyy}.",
+                "Success"
+            );
+
+            await _notificationService.SendToAdminsAsync(
+                "Yeni Kitab İcarəsi",
+                $"{borrowerName} '{book.Title}' kitabını icarəyə götürdü.",
+                "Info"
+            );
+
+            return Ok(new
+            {
+                message = "Kitab uğurla icarəyə götürüldü!",
+                borrowId = borrowedBook.BorrowId,
+                dueDate = borrowedBook.ReturnDate?.ToString("dd.MM.yyyy")
+            });
         }
 
-        //[HttpPost("return/{borrowId}")]
-        //[Authorize]
-        //public async Task<IActionResult> ReturnBook(int borrowId)
-        //{
-        //    var borrowedBook = await _context.BorrowedBooks.FindAsync(borrowId);
-
-        //    if (borrowedBook == null || borrowedBook.Status == "returned")
-        //        return BadRequest("Invalid return request.");
-
-        //    var book = await _context.Books.FindAsync(borrowedBook.BookId);
-        //    book.AvailableCopies += 1;
-        //    borrowedBook.Status = "returned";
-
-        //    await _context.SaveChangesAsync();
-        //    return Ok(new { message = "Book returned successfully" });
-        //}
-
+        // Kitabı qaytarmaq (İstifadəçi və ya Admin)
         [HttpPost("return/{borrowId}")]
         [Authorize]
         public async Task<IActionResult> ReturnBook(int borrowId)
         {
-            var borrowedBook = await _context.BorrowedBooks.FindAsync(borrowId);
+            var borrowedBook = await _context.BorrowedBooks
+                .Include(bb => bb.Book)
+                .Include(bb => bb.User)
+                .FirstOrDefaultAsync(bb => bb.BorrowId == borrowId);
 
-            if (borrowedBook == null || borrowedBook.Status == "returned")
-                return BadRequest("Invalid return request.");
-              var book = await _context.Books.FindAsync(borrowedBook.BookId);
-              book.AvailableCopies += 1;
-            borrowedBook.Status = "returned";
+            if (borrowedBook == null)
+            {
+                return NotFound(new { message = "İcarə qeydi tapılmadı." });
+            }
 
-            _context.BorrowedBooks.Update(borrowedBook); // <-- əlavə et
+            if (borrowedBook.Status == LibraryConstants.BorrowStatus.Returned)
+            {
+                return BadRequest(new { message = "Bu kitab artıq qaytarılıb." });
+            }
+
+            borrowedBook.Status = LibraryConstants.BorrowStatus.Returned;
+
+            if (borrowedBook.Book != null)
+            {
+                borrowedBook.Book.AvailableCopies += 1;
+
+                // Növbədə gözləyən ilk rezervasiyanı tap və istifadəçisinə email göndər
+                var nextReservation = await _context.Reservations
+                    .Include(r => r.User)
+                    .Where(r => r.BookId == borrowedBook.BookId && r.Status == LibraryConstants.ReservationStatus.Pending)
+                    .OrderBy(r => r.ReservationDate)
+                    .FirstOrDefaultAsync();
+
+                if (nextReservation?.User != null)
+                {
+                    nextReservation.Status = LibraryConstants.ReservationStatus.Approved;
+
+                    // Rezerv edən oxucuya dərhal bildiriş
+                    await _notificationService.SendNotificationAsync(
+                        nextReservation.UserId,
+                        "Rezerv Etdiyiniz Kitab Hazırdır! 🎉",
+                        $"Rezerv etdiyiniz '{borrowedBook.Book.Title}' kitabı artıq kitabxanaya qaytarıldı və sizin üçün ayrıldı. Yaxınlaşaraq təhvil ala bilərsiniz.",
+                        "Success"
+                    );
+
+                    if (!string.IsNullOrEmpty(nextReservation.User.Email))
+                    {
+                        string subject = "Rezerv etdiyiniz kitab artıq kitabxanadadır!";
+                        string message = $"Hörmətli {nextReservation.User.FullName},<br><br>"
+                                       + $"Rezerv etdiyiniz <strong>'{borrowedBook.Book.Title}'</strong> kitabı qaytarıldı və sizin üçün ayrıldı. "
+                                       + "Zəhmət olmasa yaxınlaşıb təhvil alın.<br><br>Hörmətlə,<br>Kitabxana İdarəetmə Sistemi";
+
+                        try { await _emailService.SendEmailAsync(nextReservation.User.Email, subject, message); } catch {}
+                    }
+                }
+            }
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Book status updated to returned" });
+
+            // Kitabı qaytaran istifadəçiyə bildiriş
+            await _notificationService.SendNotificationAsync(
+                borrowedBook.UserId,
+                "Kitab Təhvil Verildi",
+                $"'{borrowedBook.Book?.Title}' kitabı uğurla kitabxanaya təhvil verildi. Təşəkkür edirik!",
+                "Success"
+            );
+
+            return Ok(new { message = "Kitab uğurla qaytarıldı kimi qeyd edildi!" });
         }
 
+        // İstifadəçinin bütün (tarixçə daxil) icarə kitabları
         [HttpGet("user/{userId}/all")]
         [Authorize]
         public async Task<IActionResult> GetAllBorrowedBooksByUser(string userId)
         {
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            var isAdmin = User.IsInRole(LibraryConstants.Roles.Admin);
+
+            if (!isAdmin && currentUserId != userId)
+            {
+                return Forbid();
+            }
+
             var borrowedBooks = await _context.BorrowedBooks
                 .Include(bb => bb.Book)
                 .Where(bb => bb.UserId == userId)
+                .OrderByDescending(bb => bb.BorrowDate)
                 .Select(bb => new
                 {
                     bb.BorrowId,
                     bb.BookId,
-                    bb.Book.Title,
-                    bb.Book.Author,
-                    bb.Book.Genre,
-                    ReturnDate = bb.ReturnDate.HasValue
-                                 ? bb.ReturnDate.Value.ToString("dd.MM.yyyy")
-                                 : null,
-                    bb.Status
+                    Title = bb.Book.Title,
+                    Author = bb.Book.Author,
+                    Genre = bb.Book.Genre,
+                    ImageUrl = bb.Book.ImageUrl,
+                    BorrowDate = bb.BorrowDate.ToString("dd.MM.yyyy"),
+                    ReturnDate = bb.ReturnDate.HasValue ? bb.ReturnDate.Value.ToString("dd.MM.yyyy") : null,
+                    bb.Status,
+                    IsOverdue = bb.Status == LibraryConstants.BorrowStatus.Borrowed && bb.ReturnDate < DateTime.UtcNow
                 })
                 .ToListAsync();
 
-            if (!borrowedBooks.Any())
-                return NotFound("No borrowed books found for this user.");
-
             return Ok(borrowedBooks);
         }
-        //[HttpGet("user/{userId}/active")]
-        //[Authorize]
-        //public async Task<IActionResult> GetActiveBorrowedBooksByUser(string userId)
-        //{
-        //    var borrowedBooks = await _context.BorrowedBooks
-        //        .Include(bb => bb.Book)
-        //        .Where(bb => bb.UserId == userId && bb.Status != "returned")
-        //        .Select(bb => new
-        //        {
-        //            bb.BorrowId,
-        //            bb.BookId,
-        //            bb.Book.Title,
-        //            bb.Book.Author,
-        //            bb.Book.Genre,
-        //            bb.ReturnDate,
-        //            bb.Status
-        //        })
-        //        .ToListAsync();
 
-        //    if (!borrowedBooks.Any())
-        //        return NotFound("No active borrowed books found for this user.");
-
-        //    return Ok(borrowedBooks);
-        //}
-
+        // İstifadəçinin hazırda aktiv icarədə olan kitabları
         [HttpGet("user/{userId}/active")]
         [Authorize]
         public async Task<IActionResult> GetActiveBorrowedBooksByUser(string userId)
         {
-            var borrowedBooks = await _context.BorrowedBooks
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            var isAdmin = User.IsInRole(LibraryConstants.Roles.Admin);
+
+            if (!isAdmin && currentUserId != userId)
+            {
+                return Forbid();
+            }
+
+            var activeBorrows = await _context.BorrowedBooks
                 .Include(bb => bb.Book)
-                .Where(bb => bb.UserId == userId && bb.Status != "returned")
+                .Where(bb => bb.UserId == userId && bb.Status != LibraryConstants.BorrowStatus.Returned)
+                .OrderByDescending(bb => bb.BorrowDate)
                 .Select(bb => new
                 {
                     bb.BorrowId,
                     bb.BookId,
-                    bb.Book.Title,
-                    bb.Book.Author,
-                    bb.Book.Genre,
-                    ReturnDate = bb.ReturnDate.HasValue
-                                 ? bb.ReturnDate.Value.ToString("dd.MM.yyyy")
-                                 : null,
-                    bb.Status
+                    Title = bb.Book.Title,
+                    Author = bb.Book.Author,
+                    Genre = bb.Book.Genre,
+                    ImageUrl = bb.Book.ImageUrl,
+                    BorrowDate = bb.BorrowDate.ToString("dd.MM.yyyy"),
+                    ReturnDate = bb.ReturnDate.HasValue ? bb.ReturnDate.Value.ToString("dd.MM.yyyy") : null,
+                    RawReturnDate = bb.ReturnDate,
+                    bb.Status,
+                    IsOverdue = bb.ReturnDate < DateTime.UtcNow
                 })
                 .ToListAsync();
 
-            if (!borrowedBooks.Any())
-                return NotFound("No active borrowed books found for this user.");
-
-            return Ok(borrowedBooks);
+            return Ok(activeBorrows);
         }
 
+        // Bütün icarələr (Yalnız Admin üçün)
         [HttpGet("getallborrowedbooks")]
-        //[Authorize(Roles = "Admin")] // Only accessible by admins
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllBorrowedBooks()
         {
             var borrowedBooks = await _context.BorrowedBooks
@@ -383,12 +255,13 @@ namespace ProjectLibrary.Server.Controllers
                 .OrderByDescending(bb => bb.BorrowDate)
                 .Select(bb => new
                 {
-                    BorrowId = bb.BorrowId,
+                    bb.BorrowId,
                     BookInfo = new
                     {
                         bb.Book.BookId,
                         bb.Book.Title,
-                        bb.Book.Author
+                        bb.Book.Author,
+                        bb.Book.ImageUrl
                     },
                     UserInfo = new
                     {
@@ -396,26 +269,14 @@ namespace ProjectLibrary.Server.Controllers
                         bb.User.FullName,
                         bb.User.Email
                     },
-                    BorrowDate = bb.BorrowDate.ToString("dd.MM.yyyy"), // Səliqəli format
-                    ReturnDate = bb.ReturnDate.HasValue
-                 ? bb.ReturnDate.Value.ToString("dd.MM.yyyy")
-                 : null,
+                    BorrowDate = bb.BorrowDate.ToString("dd.MM.yyyy"),
+                    ReturnDate = bb.ReturnDate.HasValue ? bb.ReturnDate.Value.ToString("dd.MM.yyyy") : null,
                     bb.Status,
-                    IsOverdue = bb.Status == "borrowed" && bb.ReturnDate < DateTime.UtcNow
+                    IsOverdue = bb.Status == LibraryConstants.BorrowStatus.Borrowed && bb.ReturnDate < DateTime.UtcNow
                 })
                 .ToListAsync();
 
-            if (!borrowedBooks.Any())
-                return NotFound("No borrowed books found in the system.");
-
             return Ok(borrowedBooks);
         }
-
-
-
-
     }
 }
-
-
-
